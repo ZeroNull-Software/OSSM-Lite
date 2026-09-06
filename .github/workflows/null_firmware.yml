@@ -18,6 +18,7 @@ jobs:
     permissions:
       actions: write
       contents: write
+      environments: write
       repository-projects: read
     outputs:
       version: ${{ steps.compute.outputs.version }}
