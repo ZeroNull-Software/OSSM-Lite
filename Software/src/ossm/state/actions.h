@@ -9,6 +9,8 @@ void ossmReverseRail();
 void ossmDrawPlayControls();
 void ossmStartStreaming();
 void ossmDrawPatternControls();
+void ossmDrawStopping();
+void ossmStartHaltAtMin();
 void ossmDrawPreflight();
 void ossmResetSettingsStrokeEngine();
 void ossmResetSettingsStreaming();
@@ -45,6 +47,10 @@ namespace actions {
     constexpr auto startStreaming = []() { ossmStartStreaming(); };
 
     constexpr auto drawPatternControls = []() { ossmDrawPatternControls(); };
+
+    constexpr auto drawStopping = []() { ossmDrawStopping(); };
+
+    constexpr auto startHaltAtMin = []() { ossmStartHaltAtMin(); };
 
     constexpr auto drawPreflight = []() { ossmDrawPreflight(); };
 
