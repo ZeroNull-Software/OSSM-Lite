@@ -1,24 +1,24 @@
 {
-  "name": "OSSM Lite",
+  "name": "OSSM Lite - ZeroNull edition",
   "builds": [
     {
       "chipFamily": "ESP32",
       "improv": false,
       "parts": [
         {
-          "path": "https://fray-d.github.io/OSSM-Lite/bootloader.bin",
+          "path": "https://zeronull-software.github.io/OSSM-Lite/bootloader.bin",
           "offset": 4096
         },
         {
-          "path": "https://fray-d.github.io/OSSM-Lite/partitions.bin",
+          "path": "https://zeronull-software.github.io/OSSM-Lite/partitions.bin",
           "offset": 32768
         },
         {
-          "path": "https://fray-d.github.io/OSSM-Lite/boot_app0.bin",
+          "path": "https://zeronull-software.github.io/OSSM-Lite/boot_app0.bin",
           "offset": 57344
         },
         {
-          "path": "https://fray-d.github.io/OSSM-Lite/firmware.bin",
+          "path": "https://zeronull-software.github.io/OSSM-Lite/firmware.bin",
           "offset": 65536
         }
       ]
