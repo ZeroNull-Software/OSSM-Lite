@@ -42,8 +42,9 @@ namespace stroke_engine {
         // depth = max position; stroke length = max - min
         Stroker.setDepth(0.01f * settings.maxPosition * abs(properties.physicalTravel), true);
         Stroker.setStroke(0.01f * (settings.maxPosition - settings.minPosition) * abs(properties.physicalTravel), true);
+        Stroker.setPattern(settings.pattern, true);
         Stroker.setSensation(calculateSensation(settings.sensation), true);
-
+        
         auto isInCorrectState = []() {
             // Add any states that you want to support here.
             return stateMachine->is("strokeEngine"_s) ||
