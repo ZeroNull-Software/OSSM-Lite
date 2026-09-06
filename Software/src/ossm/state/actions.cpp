@@ -45,6 +45,14 @@ void ossmDrawPatternControls() {
     pattern_controls::drawPatternControls();
 }
 
+void ossmDrawStopping() {
+    stroke_engine::drawStopping();
+}
+
+void ossmStartHaltAtMin() {
+    stroke_engine::startHaltAtMin();
+}
+
 void ossmDrawPreflight() { pages::drawPreflight(); }
 
 void ossmResetSettingsStrokeEngine() {
