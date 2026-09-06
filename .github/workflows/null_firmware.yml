@@ -1,0 +1,216 @@
+name: ZeroNull Firmware Release
+
+on:
+  push:
+    branches:
+      - null-firmware-release
+    paths:
+      - 'Software/**'
+  workflow_dispatch:
+
+concurrency:
+  group: firmware-release
+  cancel-in-progress: false
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.compute.outputs.version }}
+    steps:
+      - name: Compute firmware version (yyyy.mm.bbb)
+        id: compute
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Version scheme: yyyy.mm.bbb, where bbb increments per release
+            // within the current year/month. The previous version is
+            // determined by looking at existing GitHub Releases (tag names),
+            // so no extra permissions/environment variables are required -
+            // this job only needs read access to repo contents/releases.
+            const now = new Date();
+            const yyyy = now.getUTCFullYear();
+            const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+            const prefix = `${yyyy}.${mm}.`;
+
+            let lastBbb = 0;
+            try {
+              const releases = await github.paginate(github.rest.repos.listReleases, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100
+              });
+              for (const release of releases) {
+                if (release.tag_name && release.tag_name.startsWith(prefix)) {
+                  const parsed = parseInt(release.tag_name.slice(prefix.length), 10);
+                  if (!Number.isNaN(parsed) && parsed > lastBbb) {
+                    lastBbb = parsed;
+                  }
+                }
+              }
+            } catch (e) {
+              core.info(`Could not list existing releases, starting from bbb=0: ${e.message}`);
+            }
+
+            const version = `${prefix}${String(lastBbb + 1).padStart(3, '0')}`;
+            core.setOutput('version', version);
+            core.info(`Firmware version: ${version}`);
+
+  build:
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set firmware version in Version.h
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          sed -i "s|^#define VERSION .*|#define VERSION \"$VERSION\"|" \
+            Software/src/constants/Version.h
+          grep '#define VERSION' Software/src/constants/Version.h
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio/.cache
+          key: ${{ runner.os }}-pio
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.9"
+
+      - name: Install PlatformIO Core
+        run: pip install --upgrade platformio
+
+      - name: Build PlatformIO Project
+        run: |
+          cd Software
+          pio run -e production
+
+      - name: Upload firmware artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-bin
+          path: |
+            Software/.pio/build/production/firmware.bin
+            Software/.pio/build/production/partitions.bin
+            Software/.pio/build/production/bootloader.bin
+          retention-days: 7
+
+  deploy:
+    needs: [version, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      deployments: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download firmware artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: firmware-bin
+          path: ./firmware
+
+      - name: Copy firmware into docs/
+        run: |
+          cp ./firmware/firmware.bin docs/firmware.bin
+          cp ./firmware/partitions.bin docs/partitions.bin
+          cp ./firmware/bootloader.bin docs/bootloader.bin
+
+      - name: Commit and push firmware to docs/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/firmware.bin docs/partitions.bin docs/bootloader.bin
+          git commit -m "Update firmware binaries [skip ci]" || echo "No changes to commit"
+          git push
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const version = '${{ needs.version.outputs.version }}';
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: version,
+              target_commitish: 'null-firmware-release',
+              name: version,
+              body: [
+                `## OSSM-Lite Firmware \`${version}\``,
+                '',
+                `- **Build:** #${{ github.run_number }} - [view run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})`,
+                `- **Commit:** \`${{ github.sha }}\``,
+                '- **Flash online:** https://zeronull-software.github.io/OSSM-Lite/',
+                '',
+                '### Assets',
+                '- `firmware.bin`, `partitions.bin`, `bootloader.bin` - flash with esptool',
+                '- `docs.zip` - full web flasher (extract, then flash via the HTML page)'
+              ].join('\n'),
+              draft: false,
+              prerelease: false
+            });
+
+            const assets = ['firmware.bin', 'partitions.bin', 'bootloader.bin'];
+            for (const asset of assets) {
+              await github.rest.repos.uploadReleaseAsset({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id,
+                name: asset,
+                data: require('fs').readFileSync(`./firmware/${asset}`)
+              });
+            }
+
+            // Zip the (updated) docs folder and attach it
+            require('child_process').execSync('zip -r docs.zip docs', { cwd: context.workspace });
+            await github.rest.repos.uploadReleaseAsset({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: release.data.id,
+              name: 'docs.zip',
+              data: require('fs').readFileSync('docs.zip')
+            });
+
+            core.info(`Created release ${version}`);
+
+      - name: Create GitHub Deployment
+        id: create_deployment
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deployment = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.ref,
+              environment: 'firmware',
+              auto_merge: false,
+              required_contexts: [],
+              description: 'OSSM Firmware Deployment'
+            });
+            return { id: deployment.data.id };
+
+      - name: Create Deployment Status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const deploymentId = ${{ steps.create_deployment.outputs.result }}.id;
+            const flashUrl = 'https://zeronull-software.github.io/OSSM-Lite/';
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: deploymentId,
+              state: 'success',
+              environment_url: flashUrl,
+              log_url: flashUrl,
+              description: 'Firmware ready to flash'
+            });
+
