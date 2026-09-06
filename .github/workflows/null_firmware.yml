@@ -30,18 +30,24 @@ jobs:
             const now = new Date();
             const yyyy = now.getUTCFullYear();
             const mm = String(now.getUTCMonth() + 1).padStart(2, '0');
+            const { data: repository } = await github.rest.repos.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
 
             let lastBbb = 0;
+            let variableExists = false;
             try {
               console.log('Attempting to list environment variables...');
               console.log(`Owner: ${context.repo.owner}, Repo: ${context.repo.repo}`);
               const { data } = await github.rest.actions.listEnvironmentVariables({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
+                repository_id: repository.id,
                 environment_name: 'firmware'
               });
               console.log('Success! Data:', data);
-              const stored = data.variables.find(v => v.name === 'FIRMWARE_BUILD_VERSION')?.value ?? '';
+              const existingVariable = data.variables.find(v => v.name === 'FIRMWARE_BUILD_VERSION');
+              const stored = existingVariable?.value ?? '';
+              variableExists = Boolean(existingVariable);
               const parsed = parseInt(String(stored).split('.').pop(), 10);
               if (!Number.isNaN(parsed)) {
                 lastBbb = parsed;
@@ -52,11 +58,9 @@ jobs:
             }
 
             const version = `${yyyy}.${mm}.${String(lastBbb + 1).padStart(3, '0')}`;
-
             // Persist for the next run
-            await github.rest.actions.updateEnvironmentVariable({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+            await github.rest.actions[variableExists ? 'updateEnvironmentVariable' : 'createEnvironmentVariable']({
+              repository_id: repository.id,
               environment_name: 'firmware',
               name: 'FIRMWARE_BUILD_VERSION',
               value: version
