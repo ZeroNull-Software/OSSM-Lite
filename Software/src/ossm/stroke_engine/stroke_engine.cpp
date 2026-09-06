@@ -144,15 +144,37 @@ namespace stroke_engine {
         int32_t minDepthSteps =
             (int32_t)round(0.01f * settings.minPosition * calibration.measuredStrokeSteps);
 
-        if (stepper->getCurrentPosition() != minDepthSteps) {
-            ESP_LOGD("UTILS", "halt at min depth: moving to %d steps", minDepthSteps);
-            stepper->setAcceleration(
-                UserConfig::getStepsPerMM(UserConfig::getMaxAcceleration()));
-            // Glide there gently, at ~10% of the max speed
-            stepper->setSpeedInHz(
-                UserConfig::getStepsPerMM(0.1f * UserConfig::getMaxSpeedMMS()));
+        // Glide there at a slow, deliberate speed with a smooth (capped)
+        // acceleration, so the settle is a gentle glide rather than a fast
+        // jerk. Speed is 10% of the max speed, capped at 50mm/s so it stays
+        // sensible across a wide range of max-speed configs; acceleration is
+        // capped at 2000mm/s^2 so the ramp stays smooth on any config.
+        float retractSpeedMMS = 0.1f * UserConfig::getMaxSpeedMMS();
+        if (retractSpeedMMS > 50.0f) {
+            retractSpeedMMS = 50.0f;
+        }
+        float retractAccelMMS2 = UserConfig::getMaxAcceleration();
+        if (retractAccelMMS2 > 2000.0f) {
+            retractAccelMMS2 = 2000.0f;
+        }
+
+        int32_t startPos = stepper->getCurrentPosition();
+        if (startPos != minDepthSteps) {
+            int32_t distanceSteps = minDepthSteps - startPos;
+            float speedSteps = UserConfig::getStepsPerMM(retractSpeedMMS);
+            float accelSteps = UserConfig::getStepsPerMM(retractAccelMMS2);
+            ESP_LOGI("UTILS",
+                     "halt at min: start=%d target=%d dist=%d steps (%.1f mm) "
+                     "speed=%.1f mm/s (%.0f steps/s) accel=%.0f mm/s^2 (%.0f steps/s^2)",
+                     startPos, minDepthSteps, distanceSteps,
+                     abs(distanceSteps) / UserConfig::getStepsPerMM(),
+                     retractSpeedMMS, speedSteps, retractAccelMMS2, accelSteps);
+
+            stepper->setAcceleration(accelSteps);
+            stepper->setSpeedInHz(speedSteps);
             stepper->moveTo(minDepthSteps, false);
 
+            unsigned long startMs = millis();
             while (stepper->isRunning()) {
                 if (!isInCorrectState()) {
                     // Aborted (e.g. emergency stop back to the menu)
@@ -160,6 +182,9 @@ namespace stroke_engine {
                 }
                 vTaskDelay(10);
             }
+            ESP_LOGI("UTILS", "halt at min: settled in %lu ms", millis() - startMs);
+        } else {
+            ESP_LOGI("UTILS", "halt at min: already at min depth (%d steps)", startPos);
         }
 
         if (isInCorrectState()) {
