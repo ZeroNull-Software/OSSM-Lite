@@ -9,6 +9,17 @@ namespace stroke_engine {
      */
     void startStrokeEngine();
 
+    /**
+     * Draw the page shown while the machine halts at the min depth
+     */
+    void drawStopping();
+
+    /**
+     * Start the task that smoothly halts the machine at the currently
+     * defined min depth, then fires Done to continue the state machine
+     */
+    void startHaltAtMin();
+
 }  // namespace stroke_engine
 
 #endif  // OSSM_STROKE_ENGINE_STROKE_ENGINE_H

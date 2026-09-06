@@ -74,16 +74,26 @@ struct OSSMStateMachine {
             "strokeEngine.preflight"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine.idle"_s + buttonPress / incrementControlStrokeEngine = "strokeEngine.idle"_s,
-            "strokeEngine.idle"_s + doublePress / drawPatternControls = "strokeEngine.pattern"_s,
+            "strokeEngine.idle"_s + doublePress / (drawStopping, startHaltAtMin) = "strokeEngine.stopping"_s,
             "strokeEngine.idle"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.idle"_s + returnToMenu / emergencyStop = "menu"_s,
             "strokeEngine.idle"_s + tryUpdate / emergencyStop = "update"_s,
 
-            "strokeEngine.pattern"_s + buttonPress / drawPlayControls = "strokeEngine.idle"_s,
-            "strokeEngine.pattern"_s + doublePress / drawPlayControls = "strokeEngine.idle"_s,
+            "strokeEngine.stopping"_s + done / drawPatternControls = "strokeEngine.pattern"_s,
+            "strokeEngine.stopping"_s + longPress / emergencyStop = "menu"_s,
+            "strokeEngine.stopping"_s + returnToMenu / emergencyStop = "menu"_s,
+            "strokeEngine.stopping"_s + tryUpdate / emergencyStop = "update"_s,
+
+            "strokeEngine.pattern"_s + buttonPress / drawPreflight = "strokeEngine.speedCheck"_s,
+            "strokeEngine.pattern"_s + doublePress / drawPreflight = "strokeEngine.speedCheck"_s,
             "strokeEngine.pattern"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.pattern"_s + returnToMenu / emergencyStop = "menu"_s,
             "strokeEngine.pattern"_s + tryUpdate / emergencyStop = "update"_s,
+
+            "strokeEngine.speedCheck"_s + done / (drawPlayControls, startStrokeEngine) = "strokeEngine.idle"_s,
+            "strokeEngine.speedCheck"_s + longPress / emergencyStop = "menu"_s,
+            "strokeEngine.speedCheck"_s + returnToMenu / emergencyStop = "menu"_s,
+            "strokeEngine.speedCheck"_s + tryUpdate / emergencyStop = "update"_s,
 
             "streaming"_s [isNotHomed] = "homing"_s,
             "streaming"_s [isPreflightSafe] / (resetSettingsStreaming, drawPlayControls, startStreaming) = "streaming.idle"_s,

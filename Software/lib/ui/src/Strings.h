@@ -51,6 +51,9 @@ namespace ui {
         // ============================================================
         static const char speedWarning[] PROGMEM =
             "Decrease the speed to begin playing.";
+        static const char stopping[] PROGMEM = "Stopping";
+        static const char stoppingAtMinDepth[] PROGMEM =
+            "Returning to min depth";
         static const char homingTookTooLong[] PROGMEM =
             "Homing took too long. Please check your wiring and try again.";
         static const char strokeTooShort[] PROGMEM =

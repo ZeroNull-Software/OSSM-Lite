@@ -20,7 +20,8 @@ namespace pages {
         auto isInPreflight = []() {
             return stateMachine->is("advancedPenetration.preflight"_s) ||
                    stateMachine->is("streaming.preflight"_s) ||
-                   stateMachine->is("strokeEngine.preflight"_s);
+                   stateMachine->is("strokeEngine.preflight"_s) ||
+                   stateMachine->is("strokeEngine.speedCheck"_s);
         };
 
         showHeaderIcons = true;
