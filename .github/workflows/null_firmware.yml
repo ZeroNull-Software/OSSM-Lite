@@ -16,6 +16,7 @@ jobs:
   version:
     runs-on: ubuntu-latest
     permissions:
+      actions: write
       contents: write
     outputs:
       version: ${{ steps.compute.outputs.version }}
@@ -33,12 +34,12 @@ jobs:
             // segment of the stored version matters (e.g. "2026.09.004" -> 4)
             let lastBbb = 0;
             try {
-              const { data: vars } = await github.rest.repos.listEnvironmentVariables({
+              const { data } = await github.rest.actions.listEnvironmentVariables({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 environment_name: 'firmware'
               });
-              const stored = vars.find(v => v.name === 'FIRMWARE_BUILD_VERSION')?.value ?? '';
+              const stored = data.variables.find(v => v.name === 'FIRMWARE_BUILD_VERSION')?.value ?? '';
               const parsed = parseInt(String(stored).split('.').pop(), 10);
               if (!Number.isNaN(parsed)) {
                 lastBbb = parsed;
@@ -50,7 +51,7 @@ jobs:
             const version = `${yyyy}.${mm}.${String(lastBbb + 1).padStart(3, '0')}`;
 
             // Persist for the next run
-            await github.rest.repos.updateEnvironmentVariable({
+            await github.rest.actions.updateEnvironmentVariable({
               owner: context.repo.owner,
               repo: context.repo.repo,
               environment_name: 'firmware',
