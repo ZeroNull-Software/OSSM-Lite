@@ -251,23 +251,10 @@ void StrokeEngine::stopMotion() {
         _servo->stopMove();
 
         ESP_LOGD(SE,"Motion stopped");
-
-        // Wait for _servo stopped
-        while (_servo->isRunning())
-        ;
-
-        // Send telemetry data
-        if (_callbackTelemetry != NULL) {
-            _callbackTelemetry(float(_servo->getCurrentPosition() / _machine->stepsPerMillimeter), 0.0, false);
-        }
     }
 }
 
 ServoState StrokeEngine::getState() { return _state; }
-
-void StrokeEngine::registerTelemetryCallback(void (*callbackTelemetry)(float, float, bool)) {
-    _callbackTelemetry = callbackTelemetry;
-}
 
 void StrokeEngine::_stroking() {
     motionParameter currentMotion;
@@ -335,18 +322,8 @@ void StrokeEngine::_applyMotionProfile(motionParameter *motion) {
     // Apply new trapezoidal motion profile to _servo if pattern does not skip
     if (motion->skip == false) {
         // Constrain speed to below _maxStepPerSecond
-        if (motion->speed > _maxStepPerSecond) {
-            ESP_LOGD(SE,"Constrain speed: %f -> %f mm/s", motion->speed, _maxStepPerSecond);
-            motion->speed = _maxStepPerSecond;
-            clipping = true;
-        }
-
-        // Constrain acceleration between 1 step/sec^2 and _maxStepAcceleration
-        if (motion->acceleration > _maxStepAcceleration) {
-            ESP_LOGD(SE,"Constrain acceleration: %f -> %f mm/s²", motion->acceleration, _maxStepAcceleration);
-            motion->acceleration = _maxStepAcceleration;
-            clipping = true;
-        }
+        motion->speed = constrain(motion->speed, 1, _maxStepPerSecond);
+        motion->acceleration = constrain(motion->acceleration, 1, _maxStepAcceleration);
 
         // Constrain stroke to motion envelope
         int pos = constrain((motion->stroke), _minStep, _maxStep);
@@ -359,11 +336,5 @@ void StrokeEngine::_applyMotionProfile(motionParameter *motion) {
         // Compile speed telemetry data
         speed = float(motion->speed / _machine->stepsPerMillimeter);
         position = float(pos / _machine->stepsPerMillimeter);
-
-
-        // Send telemetry data
-        if (_callbackTelemetry != NULL) {
-            _callbackTelemetry(position, speed, clipping);
-        }
     }
 }
