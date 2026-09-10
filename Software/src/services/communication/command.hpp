@@ -37,16 +37,12 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
 
 inline NimBLECharacteristic* initCommandCharacteristic(NimBLEService* pService, NimBLEUUID uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE_NR);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Input commands to the device.");
     pChar->setCallbacks(&chrCallbacks);
     return pChar;
 }
 
-NimBLECharacteristic* initCharacteristic(NimBLEService* pService, std::string uuid, NimBLECharacteristicCallbacks* callbacks, String description) {
+NimBLECharacteristic* initCharacteristic(NimBLEService* pService, std::string uuid, NimBLECharacteristicCallbacks* callbacks) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue(description);
     pChar->setCallbacks(callbacks);
     return pChar;
 }
@@ -103,8 +99,6 @@ class OffsetCallbacks : public NimBLECharacteristicCallbacks {
 
 NimBLECharacteristic* initOffsetCharacteristic(NimBLEService* pService, std::string uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Provides offset for automatic sync");
     pChar->setCallbacks(&offsetCallbacks);
     return pChar;
 }

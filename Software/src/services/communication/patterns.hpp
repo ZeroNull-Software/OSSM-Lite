@@ -11,9 +11,6 @@ inline NimBLECharacteristic* initPatternsCharacteristic(NimBLEService* pService,
     // Patterns characteristic (read-only list of all patterns)
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::READ);
 
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("List of available patterns");
-
     // Use ArduinoJson to construct the patterns JSON
     JsonDocument doc;
     JsonArray arr = doc.to<JsonArray>();
@@ -77,9 +74,6 @@ inline NimBLECharacteristic* initPatternDataCharacteristic(NimBLEService* pServi
                                                     NimBLEUUID uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(
         uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ);
-
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Pattern description lookup");
 
     pChar->setCallbacks(&patternDataCallbacks);
     return pChar;
