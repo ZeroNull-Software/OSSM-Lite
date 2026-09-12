@@ -185,7 +185,8 @@ async function writePresets(value) {
 }
 async function runPreset() {
     var value = presetListElement.value;
-    writePresets(":"+value);
+    await writePresets(":"+value);
+    readStatus();
 }
 async function savePreset() {
     var value = document.getElementById("presetName").value;
@@ -203,11 +204,17 @@ async function factoryReset() {
     await readPresets();
 }
 
-var statusRef, controlRef, speedElement, maxDepthElement, minDepthElement;
+var statusRef, controlRef, speedElement, maxDepthElement, minDepthElement, inSpeedElement, outSpeedElement, inAccelElement, outAccelElement;
+var elements = ['maxDepth','minDepth','inSpeed','outSpeed','inAccel','outAccel','speed'];
+var modifiers = ['','Amplitude','ToMax','AtMax','ToMin','AtMin','Offset'];
 async function initStatus() {
-    speedElement = document.getElementById("speed");
     maxDepthElement = document.getElementById("maxDepth");
     minDepthElement = document.getElementById("minDepth");
+    inSpeedElement = document.getElementById("inSpeed");
+    outSpeedElement = document.getElementById("outSpeed");
+    inAccelElement = document.getElementById("inAccel");
+    outAccelElement = document.getElementById("outAccel");
+    speedElement = document.getElementById("speed");
     try{
         statusRef = await serviceRef.getCharacteristic(STATUS_UUID);
         console.log("Characteristic " + decodeHex(STATUS_UUID) + " connected.")
@@ -224,9 +231,19 @@ async function initStatus() {
 function setStatus(value) {
     value = decoder.decode(value);
     console.log("Status: " + value);
-    speedElement.value = value.split(",")[6].split(":")[0];
-    maxDepthElement.value = value.split(",")[0].split(":")[0];
-    minDepthElement.value = value.split(",")[1].split(":")[0];
+    elements.forEach((base, i) => {
+        modifiers.forEach((mod, j) => {
+            var element = document.getElementById(base + mod);
+            if (element != null) {
+                var sub = value.split(",")[i].split(":");
+                if (sub != null && sub.length > j) {
+                    element.value = sub[j];
+                } else {
+                    element.value = element.placeholder;
+                }
+            }
+        });
+    });
 }
 async function readStatus() {
     var value = await statusRef.readValue();
@@ -259,6 +276,107 @@ async function setAMinDepth() {
         minDepthElement.value = max - 1;
     }
     writeControl("1:" + minDepthElement.value + ",");
+}
+async function setAInSpeed() {
+    writeControl("2:" + inSpeedElement.value + ",")
+}
+async function setAOutSpeed() {
+    writeControl("3:" + outSpeedElement.value + ",")
+}
+async function setAInAccel() {
+    writeControl("4:" + inAccelElement.value + ",")
+}
+async function setAOutAccel() {
+    writeControl("5:" + outAccelElement.value + ",")
+}
+async function setAAmplitude(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":0:"+element.value + ",");
+        }
+    });
+}
+async function setAToMax(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":1:"+element.value + ",");
+        }
+    });
+}
+async function setAAtMax(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":2:"+element.value + ",");
+        }
+    });
+}
+async function setAToMin(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":3:"+element.value + ",");
+        }
+    });
+}
+async function setAAtMin(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":4:"+element.value + ",");
+        }
+    });
+}
+async function setAOffset(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":5:"+element.value + ",");
+        }
+    });
+}
+async function getPresetString() {
+    var output = "";
+    elements.slice(0, -1).forEach((base, i) => {
+        output += document.getElementById(base).value;
+        modifiers.slice(1).forEach((mod, j) => {
+            var element = document.getElementById(base + mod);
+            if (element != null) {
+                if (element.value != "") {
+                    output += ":" + element.value;
+                } else {
+                    output += ":" + element.placeholder;
+                }
+            }
+        });
+        output += ",";
+    });
+    document.getElementById("presetString").value = output;
+}
+async function setPresetString() {
+    var value = document.getElementById("presetString").value;
+    var c = 1;
+    var element = document.getElementById("speed");
+    element.value = 0;
+    element.dispatchEvent(new Event('change'));
+    elements.slice(0,-1).forEach((base, i) => {
+        var sub = value.split(",")[i].split(":");
+        modifiers.forEach((mod, j) => {
+            element = document.getElementById(base + mod);
+            if (element != null) {
+                if (sub != null && sub.length > j) {
+                    if ((element.value == "" && element.placeholder != sub[j]) || (element.value != "" && element.value != sub[j])) {
+                    console.log(element.id);
+                    console.log(element.value);
+                    console.log(element.placeholder);
+                    console.log(sub[j]);
+                        setTimeout(() => {
+                            element = document.getElementById(base + mod);
+                            element.value = sub[j];
+                            element.dispatchEvent(new Event('change'));
+                        }, c * 250);
+                        c++;
+                    }
+                }
+            }
+        });
+    });
 }
 
 function drawChart() {

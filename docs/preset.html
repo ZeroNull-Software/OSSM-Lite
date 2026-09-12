@@ -14,45 +14,280 @@
   <main style="max-width: 800px;">
     <hgroup>
       <h2>OSSM Lite</h2>
-      <p>10. Advanced Penetration Preset Tool</p>
+      <p>10. Advanced Penetration</p>
     </hgroup>
-    <p>With this tool you can manage your presets. It is not meant for play or authoring new presets as it does not
-      expose all of the settings in a user friendly way. A minimum set of controls are offered.</p>
-    <p>Speed and depth are available so you can view a preset while you choose a name. Set the active preset by
-      selecting it from the dropdown. Setting speed will not work if you have a wired controller attached.</p>
-    <h6>Renaming is possible through a three step process:</h6>
-    <ul>
-      <li>Pick the old pattern from the dropdown setting it as active.</li>
-      <li>Type the new name in the box and save it with those existing settings.</li>
-      <li>Reselect the old pattern by name and click delete.</li>
-    </ul>
-    <p>Factory reset will delete all presets and load the default library of presets.</p>
-    <button id="connect" onclick="connectPresets();">Connect to Configure</button>
-    <article id="controls" style="display: none;">
-      <label for="speed">Speed</label>
-      <input type="range" min="0" max="100" value="0" id="speed" name="speed" onchange="setASpeed()">
-      <label for="maxDepth">Max Depth</label>
-      <input type="range" min="0" max="100" value="0" id="maxDepth" onchange="setAMaxDepth()">
-      <label for="minDepth">Min Depth</label>
-      <input type="range" min="0" max="100" value="0" id="minDepth" onchange="setAMinDepth()">
-      <label for="presetList">Presets</label>
-      <fieldset role="group">
-        <select id="presetList" onchange="runPreset()"></select>
-        <button onclick="deletePreset()"">Delete</button>
-      </fieldset>
-      <label for=" presetName">Preset Name</label>
-      <fieldset role="group" style="margin-bottom: 0;">
-        <input type="text" maxlength="20" id="presetName">
-        <input type="submit" value="Save" onclick="savePreset()">
-      </fieldset>
-      <p></p>
-      <button onclick="factoryReset()"">Factory Reset</button>
-    </article>
-    <p></p>
+    <p>With this tool you can manage your presets and control Advanced Penetration mode.</p>
+    <button id="connect" onclick="connectPresets();">Connect to Play</button>
+    <div id="controls" style="display: none;">
+      <article>
+        <label for="speed">Master Speed</label>
+        <input type="range" min="0" max="100" placeholder="0" id="speed" name="speed" onchange="setASpeed()">
+      </article>
+      <article>
+        <label for="maxDepth">Max Depth</label>
+        <input type="range" min="0" max="100" placeholder="0" id="maxDepth" onchange="setAMaxDepth()">
+        <details name="modifier">
+          <summary>Max Depth Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="maxDepthAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="maxDepthToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="maxDepthAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="maxDepthToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="maxDepthAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="maxDepthOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="minDepth">Min Depth</label>
+        <input type="range" min="0" max="100" placeholder="0" id="minDepth" onchange="setAMinDepth()">
+        <details name="modifier">
+          <summary>Min Depth Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="minDepthAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="minDepthToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="minDepthAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="minDepthToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="minDepthAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="minDepthOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="inSpeed">In Speed</label>
+        <input type="range" min="0" max="100" placeholder="100" id="inSpeed" onchange="setAInSpeed()">
+        <details name="modifier">
+          <summary>In Speed Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="inSpeedAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="inSpeedToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="inSpeedAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="inSpeedToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="inSpeedAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="inSpeedOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="outSpeed">Out Speed</label>
+        <input type="range" min="0" max="100" placeholder="100" id="outSpeed" onchange="setAOutSpeed()">
+        <details name="modifier">
+          <summary>Out Speed Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="outSpeedAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="outSpeedToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="outSpeedAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="outSpeedToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="outSpeedAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="outSpeedOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="inAccel">In Acceleration</label>
+        <input type="range" min="0" max="100" placeholder="40" id="inAccel" onchange="setAInAccel()">
+        <details name="modifier">
+          <summary>In Acceleration Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="inAccelAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="inAccelToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="inAccelAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="inAccelToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="inAccelAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="inAccelOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="outAccek">Out Acceleration</label>
+        <input type="range" min="0" max="100" placeholder="40" id="outAccel" onchange="setAOutAccel()">
+        <details name="modifier">
+          <summary>Out Acceleration Modifiers</summary>
+          <table>
+            <tr>
+              <th>Amplitude</th>
+              <th>To Min</th>
+              <th>At Min</th>
+              <th>To Max</th>
+              <th>At Max</th>
+              <th>Offset</th>
+            </tr>
+            <tr>
+              <td>
+                <input type="number" id="outAccelAmplitude" placeholder="100" min="0" max="100" onchange="setAAmplitude(this)">
+              </td>
+              <td>
+                <input type="number" id="outAccelToMax" placeholder="1" min="1" max="25" onchange="setAToMax(this)">
+              </td>
+              <td>
+                <input type="number" id="outAccelAtMax" placeholder="0" min="0" max="25" onchange="setAAtMax(this)">
+              </td>
+              <td>
+                <input type="number" id="outAccelToMin" placeholder="1" min="1" max="25" onchange="setAToMin(this)">
+              </td>
+              <td>
+                <input type="number" id="outAccelAtMin" placeholder="0" min="0" max="25" onchange="setAAtMin(this)">
+              </td>
+              <td>
+                <input type="number" id="outAccelOffset" placeholder="0" min="0" max="100" onchange="setAOffset(this)">
+              </td>
+            </tr>
+          </table>
+        </details>
+      </article>
+      <article>
+        <label for="presetList">Presets</label>
+        <fieldset role="group">
+          <button onclick="runPreset()"">Load</button>
+          <select id="presetList"></select>
+          <button onclick="deletePreset()"">Delete</button>
+        </fieldset>
+        <p>Load the settings for a preset by selecting it from the dropdown and clicking the load button.</p>
+      </article>
+      <article>
+        <label for=" presetName">Preset Name</label>
+        <fieldset role="group" style="margin-bottom: 0;">
+          <input type="text" maxlength="20" id="presetName">
+          <input type="submit" value="Save" onclick="savePreset()">
+        </fieldset>
+        <p></p>
+        <p>Save the current settings to a preset by filling in the preset name and clicking save. Master Speed and Depth values are not saved to presets, but all other values and modifiers are. This is a safety feature.</p>
+        <h6>Renaming is possible through a three step process:</h6>
+        <ul>
+          <li>Load the old pattern above.</li>
+          <li>Type the new name in the box and save it with those settings.</li>
+          <li>Reselect the old pattern by name and click delete.</li>
+        </ul>
+      </article>
+      <article>
+        <label for="presetList">Sharing</label>
+        <fieldset role="group">
+          <button onclick="getPresetString()"">Get</button>
+          <input type="text" id="presetString">
+          <button onclick="setPresetString()"">Set</button>
+        </fieldset>
+        <p>Click the get button to get a sharing code you can copy to others. Write a sharing code and click set to try it out. SHARED CODES DO SET YOUR DEPTH VALUES, so setting one will pause the machine.</p>
+      </article>
+      <article>
+        <button onclick="factoryReset()"">Factory Reset</button>
+        <p></p>
+        <p>Factory reset will delete all presets and load the default library of presets.</p>
+      </article>
+    </div>
     <p>
       <strong>Requirements:</strong> Chrome, Edge, or Opera on desktop or Android.
     </p>
-    <a href="play.html">Previous</a> |
+    <a href=" play.html">Previous</a> |
     <a href="index.html">Home</a> |
     <a href="funscript.html">Next</a>
     <dialog id="oldFirmware">
@@ -62,7 +297,8 @@
           <h3>Could not connect to OSSM!</h3>
         </header>
         <p>
-          Likely causes, in order of likelyhood: You're using an unsupported browser that doesn't have access to bluetooth, your bluetooth adapter is not capable of connecting, or your firmware is out of date. 
+          Likely causes, in order of likelyhood: You're using an unsupported browser that doesn't have access
+          to bluetooth, your bluetooth adapter is not capable of connecting, or your firmware is out of date.
         </p>
         <footer>
           <button autofocus="" onclick="firmareClose()">
