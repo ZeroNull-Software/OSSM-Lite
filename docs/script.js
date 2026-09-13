@@ -29,6 +29,11 @@ const BUFFER_UUID = "4f53534d-436f-6d6d-6f6e-427566666572";
 const OFFSET_UUID = "4f53534d-436f-6d6d-6f6e-4f6666736574";
 const STREAM_UUID = "4f53534d-436f-6d6d-6f6e-53747265616d";
 
+//Stroke Engine
+const SENSAT_UUID = "4f53534d-456e-6769-6e65-536174696f6e";
+const SENPAT_UUID = "4f53534d-456e-6769-6e65-50617465726e";
+const SENPTL_UUID = "4f53534d-456e-6769-6e65-5061744c7374";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -417,13 +422,6 @@ async function initCurve() {
     try {
         let characteristicRef = await serviceRef.getCharacteristic(SPDCRV_UUID);
         console.log("Characteristic " + decodeHex(SPDCRV_UUID) + " connected.")
-        if (characteristicRef.properties.notification) {
-            await characteristicRef.startNotifications().then(
-                function() {
-                    characteristicRef.addEventListener('characteristicvaluechanged', (event) => readSetting(event, element, characteristicRef));
-                }
-            )
-        }
         element.onchange = function() {
             writeSetting(element, characteristicRef);
             drawChart();
@@ -440,7 +438,8 @@ async function initSetting(element, uuid) {
     try {
         let characteristicRef = await serviceRef.getCharacteristic(uuid);
         console.log("Characteristic " + decodeHex(uuid) + " connected.")
-        if (characteristicRef.properties.notification) {
+        if (characteristicRef.properties.notify) {
+            console.log("notification?");
             await characteristicRef.startNotifications().then(
                 function() {
                     characteristicRef.addEventListener('characteristicvaluechanged', (event) => readSetting(event, element, characteristicRef));
@@ -457,6 +456,7 @@ async function initSetting(element, uuid) {
 }
 
 async function readSetting(event, element, characteristicRef) {
+    console.log("read");
     var value;
     if (event != null) {
         value = event.target.value;
@@ -508,7 +508,7 @@ async function writeSetting(element,characteristicRef) {
         }
     }
 
-    if (!characteristicRef.properties.notification) {
+    if (!characteristicRef.properties.notify) {
         await new Promise(resolve => setTimeout(resolve, 250));
         await readSetting(null, element, characteristicRef);
     }
@@ -648,6 +648,67 @@ async function seekStream() {
     console.log("Current action: " + currentAction);
 }
 
+// Stroke Engine Patterns
+var patternListRef, patternListElement;
+async function initStrokeEngine() {
+    patternListElement = document.getElementById("patternList");
+    try{
+        patternListRef = await serviceRef.getCharacteristic(SENPTL_UUID);
+        console.log("Characteristic " + decodeHex(SENPTL_UUID) + " connected");
+    } catch {
+        firmwareWarning();
+    }
+    await readPatterns();
+}
+async function readPatterns() {
+    var c = 0;
+    patternListElement.innerHTML = "";
+    while (c >= 0) {
+        console.log(c);
+        await patternListRef.writeValue(encoder.encode(c));
+        var value = await patternListRef.readValue();
+        value = decoder.decode(value);
+        if (value != "") {
+            var option = document.createElement("option");
+            option.text = value.split(":")[0];
+            option.value = c;
+            option.title = value.split(":")[1];
+            patternListElement.add(option);
+            c++;
+        } else {
+            c = -1;
+        }
+    }
+}
+async function syncPatternDescription(element) {
+    document.getElementById("patternDescription").innerText = element.selectedOptions[0].title;
+}
+async function initPatternSetting(element, uuid) {
+    try {
+        let characteristicRef = await serviceRef.getCharacteristic(uuid);
+        console.log("Characteristic " + decodeHex(uuid) + " connected.")
+        if (characteristicRef.properties.notify) {
+            console.log("notification?");
+            await characteristicRef.startNotifications().then(
+                function() {
+                    characteristicRef.addEventListener('characteristicvaluechanged', (event) => {
+                        readSetting(event, element, characteristicRef);
+                        syncPatternDescription(element);
+                    });
+                }
+            )
+        }
+        element.onchange = function() {
+            writeSetting(element, characteristicRef);
+            syncPatternDescription(element);
+        };
+        await readSetting(null, element, characteristicRef);
+        syncPatternDescription(element);
+    } catch {
+       firmwareWarning();
+    }
+}
+
 async function connectMotorPage() {
     await handleConnect();
     await initSetting(document.getElementById("maxAcceleration"), MACCEL_UUID);
@@ -701,4 +762,14 @@ async function connectFunscript() {
     document.getElementById("simplify").onchange = function() {
         seekStream();
     };
+}
+
+async function connectStrokeEngine() {
+    await handleConnect();
+    await initStrokeEngine();
+    await initSetting(document.getElementById('speed'),SPEED_UUID);
+    await initSetting(document.getElementById('maxDepth'), MAXDEP_UUID);
+    await initSetting(document.getElementById('minDepth'), MINDEP_UUID);
+    await initSetting(document.getElementById('sensation'), SENSAT_UUID);
+    await initPatternSetting(patternListElement, SENPAT_UUID);
 }

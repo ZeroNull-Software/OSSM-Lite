@@ -91,6 +91,41 @@ class MinDepthCallbacks : public NimBLECharacteristicCallbacks {
     }
 } inline minDepthCallbacks;
 
+class SensationCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        float value = std::stof(pCharacteristic->getValue());
+        settings.sensation = constrain(value, 0.0, 100.0);
+        settings.playControl = ui::PlayControls::SENSATION;
+        encoder.setEncoderValue(settings.sensation);
+        pulseForCommunication();
+    }
+    void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        pCharacteristic->setValue(String(settings.sensation));
+    }
+} inline sensationCallbacks;
+
+void startStrokeEngine() {
+    if (!(stateMachine->is("strokeEngine"_s ) || stateMachine->is("strokeEngine.idle"_s) || stateMachine->is("strokeEngine.pattern"_s))) {
+        stateMachine->process_event(LongPress{});
+        menuState.currentOption = Menu::StrokeEngine;
+        settings.speedBLE = 0.0;
+        stateMachine->process_event(ButtonPress{});
+    }
+}
+
+class StrokeEnginePatternCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        startStrokeEngine();
+        int value = std::stoi(pCharacteristic->getValue());
+        settings.pattern = static_cast<StrokePatterns>((int)value % (int)StrokePatterns::Count);
+        pulseForCommunication();
+    }
+    void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        startStrokeEngine();
+        pCharacteristic->setValue(String((int)settings.pattern));
+    }
+} inline strokeEnginePatternCallbacks;
+
 class OffsetCallbacks : public NimBLECharacteristicCallbacks {
     void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
         pCharacteristic->setValue(String(settings.buffer));
@@ -107,6 +142,7 @@ void startStreaming() {
     if (!(stateMachine->is("streaming"_s) || stateMachine->is("streaming.idle"_s))) {
         stateMachine->process_event(LongPress{});
         menuState.currentOption = Menu::Streaming;
+        settings.speedBLE = 0.0;
         stateMachine->process_event(ButtonPress{});
     }
 }

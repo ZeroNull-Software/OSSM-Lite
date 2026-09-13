@@ -79,4 +79,36 @@ inline NimBLECharacteristic* initPatternDataCharacteristic(NimBLEService* pServi
     return pChar;
 }
 
-#endif  // OSSM_PATTERNS_HPP
+class SimplePatternCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        std::string value = pCharacteristic->getValue();
+        int patternValue = String(value.c_str()).toInt();
+
+        int patternCount = sizeof(ui::strings::strokeEngineNames) /
+                           sizeof(ui::strings::strokeEngineNames[0]);
+
+        if (patternValue >= patternCount || patternValue < 0) {
+            pCharacteristic->setValue(String(""));
+            return;
+        }
+        
+        const char* name = ui::strings::strokeEngineNames[patternValue];
+        const char* description = ui::strings::strokeEngineDescriptions[patternValue];
+
+        // Set the characteristic value to the description
+        pCharacteristic->setValue(String(name) + ':' + String(description));
+        ESP_LOGD("Pattern Callback", "Pattern description requested: index=%d, Name=%s, description=%s",patternValue, name, description);
+    }
+} inline simplePatternCallbacks;
+
+inline NimBLECharacteristic* initSimplePatternCharacteristic(NimBLEService* pService, NimBLEUUID uuid) {
+    NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ);
+    pChar->setCallbacks(&simplePatternCallbacks);
+    int patternCount = sizeof(ui::strings::strokeEngineNames) /
+                        sizeof(ui::strings::strokeEngineNames[0]);
+    pChar->setValue(String(patternCount));
+    return pChar;
+}
+
+
+#endif  

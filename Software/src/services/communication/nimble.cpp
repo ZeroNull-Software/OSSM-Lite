@@ -56,10 +56,13 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 
 void notifyValue(const char* uuid, String value) {
     NimBLEService* ossmService = pServer->getServiceByUUID(OSSM_SERVICE_UUID);
-    NimBLECharacteristic* speedChar = ossmService->getCharacteristic(uuid);
-    speedChar->setValue(value);
-    speedChar->notify();
-    pulseForCommunication();
+    NimBLECharacteristic* noteChar = ossmService->getCharacteristic(uuid);
+    if (value != noteChar->getValue()) {
+        ESP_LOGD("NIMBLE", "Notifying: %s", value.c_str());
+        noteChar->setValue(value);
+        noteChar->notify();
+        pulseForCommunication();
+    }
 }
 
 void nimbleLoop(void* pvParameters) {
@@ -192,6 +195,10 @@ void nimbleLoop(void* pvParameters) {
             notifyValue(SPEED_UUID, String(settings.speed));
             notifyValue(MAXDEP_UUID, String(settings.maxPosition));
             notifyValue(MINDEP_UUID, String(settings.minPosition));
+            notifyValue(SENSAT_UUID, String(settings.sensation));
+            notifyValue(SENPAT_UUID, String((int)settings.pattern));
+
+            notifyValue(STATE_UUID, ossm->getCurrentStateName());
             pulseForCommunication();
         }
 
@@ -241,6 +248,11 @@ void initNimble() {
     initOffsetCharacteristic(ossmService, NimBLEUUID(OFFSET_UUID));
     initCharacteristic(ossmService, NimBLEUUID(BUFFER_UUID), &latencyCompensationConfigCallbacks);
     initCharacteristic(ossmService, NimBLEUUID(STREAM_UUID), &streamCallbacks);
+
+    initStateCharacteristic(ossmService, NimBLEUUID(STATE_UUID));
+    initCharacteristic(ossmService, NimBLEUUID(SENSAT_UUID), &sensationCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(SENPAT_UUID), &strokeEnginePatternCallbacks);
+    initSimplePatternCharacteristic(ossmService, NimBLEUUID(SENPTL_UUID));
 
     // Lecacy Service Items
     initCommandCharacteristic(lecacyService, NimBLEUUID(LEGACY_COMMAND_UUID));
