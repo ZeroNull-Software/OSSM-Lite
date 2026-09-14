@@ -29,6 +29,11 @@ const BUFFER_UUID = "4f53534d-436f-6d6d-6f6e-427566666572";
 const OFFSET_UUID = "4f53534d-436f-6d6d-6f6e-4f6666736574";
 const STREAM_UUID = "4f53534d-436f-6d6d-6f6e-53747265616d";
 
+//Stroke Engine
+const SENSAT_UUID = "4f53534d-456e-6769-6e65-536174696f6e";
+const SENPAT_UUID = "4f53534d-456e-6769-6e65-50617465726e";
+const SENPTL_UUID = "4f53534d-456e-6769-6e65-5061744c7374";
+
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
@@ -185,7 +190,8 @@ async function writePresets(value) {
 }
 async function runPreset() {
     var value = presetListElement.value;
-    writePresets(":"+value);
+    await writePresets(":"+value);
+    readStatus();
 }
 async function savePreset() {
     var value = document.getElementById("presetName").value;
@@ -203,11 +209,17 @@ async function factoryReset() {
     await readPresets();
 }
 
-var statusRef, controlRef, speedElement, maxDepthElement, minDepthElement;
+var statusRef, controlRef, speedElement, maxDepthElement, minDepthElement, inSpeedElement, outSpeedElement, inAccelElement, outAccelElement;
+var elements = ['maxDepth','minDepth','inSpeed','outSpeed','inAccel','outAccel','speed'];
+var modifiers = ['','Amplitude','ToMax','AtMax','ToMin','AtMin','Offset'];
 async function initStatus() {
-    speedElement = document.getElementById("speed");
     maxDepthElement = document.getElementById("maxDepth");
     minDepthElement = document.getElementById("minDepth");
+    inSpeedElement = document.getElementById("inSpeed");
+    outSpeedElement = document.getElementById("outSpeed");
+    inAccelElement = document.getElementById("inAccel");
+    outAccelElement = document.getElementById("outAccel");
+    speedElement = document.getElementById("speed");
     try{
         statusRef = await serviceRef.getCharacteristic(STATUS_UUID);
         console.log("Characteristic " + decodeHex(STATUS_UUID) + " connected.")
@@ -224,9 +236,19 @@ async function initStatus() {
 function setStatus(value) {
     value = decoder.decode(value);
     console.log("Status: " + value);
-    speedElement.value = value.split(",")[6].split(":")[0];
-    maxDepthElement.value = value.split(",")[0].split(":")[0];
-    minDepthElement.value = value.split(",")[1].split(":")[0];
+    elements.forEach((base, i) => {
+        modifiers.forEach((mod, j) => {
+            var element = document.getElementById(base + mod);
+            if (element != null) {
+                var sub = value.split(",")[i].split(":");
+                if (sub != null && sub.length > j) {
+                    element.value = sub[j];
+                } else {
+                    element.value = element.placeholder;
+                }
+            }
+        });
+    });
 }
 async function readStatus() {
     var value = await statusRef.readValue();
@@ -259,6 +281,103 @@ async function setAMinDepth() {
         minDepthElement.value = max - 1;
     }
     writeControl("1:" + minDepthElement.value + ",");
+}
+async function setAInSpeed() {
+    writeControl("2:" + inSpeedElement.value + ",")
+}
+async function setAOutSpeed() {
+    writeControl("3:" + outSpeedElement.value + ",")
+}
+async function setAInAccel() {
+    writeControl("4:" + inAccelElement.value + ",")
+}
+async function setAOutAccel() {
+    writeControl("5:" + outAccelElement.value + ",")
+}
+async function setAAmplitude(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":0:"+element.value + ",");
+        }
+    });
+}
+async function setAToMax(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":1:"+element.value + ",");
+        }
+    });
+}
+async function setAAtMax(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":2:"+element.value + ",");
+        }
+    });
+}
+async function setAToMin(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":3:"+element.value + ",");
+        }
+    });
+}
+async function setAAtMin(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":4:"+element.value + ",");
+        }
+    });
+}
+async function setAOffset(element) {
+    elements.forEach((base, i) => {
+        if (element.id.includes(base)) {
+            writeControl(i+":5:"+element.value + ",");
+        }
+    });
+}
+async function getPresetString() {
+    var output = "";
+    elements.slice(0, -1).forEach((base, i) => {
+        output += document.getElementById(base).value;
+        modifiers.slice(1).forEach((mod, j) => {
+            var element = document.getElementById(base + mod);
+            if (element != null) {
+                if (element.value != "") {
+                    output += ":" + element.value;
+                } else {
+                    output += ":" + element.placeholder;
+                }
+            }
+        });
+        output += ",";
+    });
+    document.getElementById("presetString").value = output;
+}
+async function setPresetString() {
+    var value = document.getElementById("presetString").value;
+    var c = 1;
+    var element = document.getElementById("speed");
+    element.value = 0;
+    element.dispatchEvent(new Event('change'));
+    elements.slice(0,-1).forEach((base, i) => {
+        var sub = value.split(",")[i].split(":");
+        modifiers.forEach((mod, j) => {
+            element = document.getElementById(base + mod);
+            if (element != null) {
+                if (sub != null && sub.length > j) {
+                    if ((element.value == "" && element.placeholder != sub[j]) || (element.value != "" && element.value != sub[j])) {
+                        setTimeout(() => {
+                            element = document.getElementById(base + mod);
+                            element.value = sub[j];
+                            element.dispatchEvent(new Event('change'));
+                        }, c * 250);
+                        c++;
+                    }
+                }
+            }
+        });
+    });
 }
 
 function drawChart() {
@@ -299,13 +418,6 @@ async function initCurve() {
     try {
         let characteristicRef = await serviceRef.getCharacteristic(SPDCRV_UUID);
         console.log("Characteristic " + decodeHex(SPDCRV_UUID) + " connected.")
-        if (characteristicRef.properties.notification) {
-            await characteristicRef.startNotifications().then(
-                function() {
-                    characteristicRef.addEventListener('characteristicvaluechanged', (event) => readSetting(event, element, characteristicRef));
-                }
-            )
-        }
         element.onchange = function() {
             writeSetting(element, characteristicRef);
             drawChart();
@@ -322,7 +434,7 @@ async function initSetting(element, uuid) {
     try {
         let characteristicRef = await serviceRef.getCharacteristic(uuid);
         console.log("Characteristic " + decodeHex(uuid) + " connected.")
-        if (characteristicRef.properties.notification) {
+        if (characteristicRef.properties.notify) {
             await characteristicRef.startNotifications().then(
                 function() {
                     characteristicRef.addEventListener('characteristicvaluechanged', (event) => readSetting(event, element, characteristicRef));
@@ -390,7 +502,7 @@ async function writeSetting(element,characteristicRef) {
         }
     }
 
-    if (!characteristicRef.properties.notification) {
+    if (!characteristicRef.properties.notify) {
         await new Promise(resolve => setTimeout(resolve, 250));
         await readSetting(null, element, characteristicRef);
     }
@@ -462,8 +574,6 @@ async function parseFunscript(content) {
         }
       }
     )
-    console.log(funscriptData.actions);
-    console.log(funscriptData.simpleActions);
     return true;
 }
 
@@ -530,6 +640,65 @@ async function seekStream() {
     console.log("Current action: " + currentAction);
 }
 
+// Stroke Engine Patterns
+var patternListRef, patternListElement;
+async function initStrokeEngine() {
+    patternListElement = document.getElementById("patternList");
+    try{
+        patternListRef = await serviceRef.getCharacteristic(SENPTL_UUID);
+        console.log("Characteristic " + decodeHex(SENPTL_UUID) + " connected");
+    } catch {
+        firmwareWarning();
+    }
+    await readPatterns();
+}
+async function readPatterns() {
+    var c = 0;
+    patternListElement.innerHTML = "";
+    while (c >= 0) {
+        await patternListRef.writeValue(encoder.encode(c));
+        var value = await patternListRef.readValue();
+        value = decoder.decode(value);
+        if (value != "") {
+            var option = document.createElement("option");
+            option.text = value.split(":")[0];
+            option.value = c;
+            option.title = value.split(":")[1];
+            patternListElement.add(option);
+            c++;
+        } else {
+            c = -1;
+        }
+    }
+}
+async function syncPatternDescription(element) {
+    document.getElementById("patternDescription").innerText = element.selectedOptions[0].title;
+}
+async function initPatternSetting(element, uuid) {
+    try {
+        let characteristicRef = await serviceRef.getCharacteristic(uuid);
+        console.log("Characteristic " + decodeHex(uuid) + " connected.")
+        if (characteristicRef.properties.notify) {
+            await characteristicRef.startNotifications().then(
+                function() {
+                    characteristicRef.addEventListener('characteristicvaluechanged', (event) => {
+                        readSetting(event, element, characteristicRef);
+                        syncPatternDescription(element);
+                    });
+                }
+            )
+        }
+        element.onchange = function() {
+            writeSetting(element, characteristicRef);
+            syncPatternDescription(element);
+        };
+        await readSetting(null, element, characteristicRef);
+        syncPatternDescription(element);
+    } catch {
+       firmwareWarning();
+    }
+}
+
 async function connectMotorPage() {
     await handleConnect();
     await initSetting(document.getElementById("maxAcceleration"), MACCEL_UUID);
@@ -583,4 +752,14 @@ async function connectFunscript() {
     document.getElementById("simplify").onchange = function() {
         seekStream();
     };
+}
+
+async function connectStrokeEngine() {
+    await handleConnect();
+    await initSetting(document.getElementById('speed'),SPEED_UUID);
+    await initSetting(document.getElementById('maxDepth'), MAXDEP_UUID);
+    await initSetting(document.getElementById('minDepth'), MINDEP_UUID);
+    await initSetting(document.getElementById('sensation'), SENSAT_UUID);
+    await initStrokeEngine();
+    await initPatternSetting(patternListElement, SENPAT_UUID);
 }

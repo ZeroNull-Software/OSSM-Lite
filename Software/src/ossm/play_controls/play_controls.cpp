@@ -37,20 +37,23 @@ static void drawPlayControlsTask(void *pvParameters) {
     SettingPercents next = {0, 0, 0, 0, 0, 0, 0, 0, StrokePatterns::SimpleStroke};
     unsigned long displayLastUpdated = 0;
 
-    auto isInCorrectState = []() {
-        return stateMachine->is("strokeEngine"_s) ||
-               stateMachine->is("strokeEngine.idle"_s) ||
-               stateMachine->is("streaming"_s) ||
-               stateMachine->is("streaming.idle"_s);
-    };
-
-    static float encoderValue = 0;
-
     bool isStrokeEngine = stateMachine->is("strokeEngine"_s) ||
                           stateMachine->is("strokeEngine.idle"_s);
 
     bool isStreaming = stateMachine->is("streaming"_s) ||
                        stateMachine->is("streaming.idle"_s);
+
+    auto isInCorrectState = [isStrokeEngine]() {
+        if (isStrokeEngine) {
+            return stateMachine->is("strokeEngine"_s) ||
+                   stateMachine->is("strokeEngine.idle"_s);
+        } else {
+            return stateMachine->is("streaming"_s) ||
+                   stateMachine->is("streaming.idle"_s);
+        }      
+    };
+
+    static float encoderValue = 0;
 
     bool shouldUpdateDisplay = false;
 
@@ -60,8 +63,9 @@ static void drawPlayControlsTask(void *pvParameters) {
     while (isInCorrectState()) {
         shouldUpdateDisplay = false;
 
-        next.speedKnob =
-            getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
+        encoderValue = encoder.readEncoder();
+        ui::PlayControls loopControl =  settings.playControl;
+        next.speedKnob = getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
 
         if (abs(next.speedKnob - settings.speedKnob) > 1.0 &&
             next.speedKnob <= settings.speed ) {
@@ -69,12 +73,8 @@ static void drawPlayControlsTask(void *pvParameters) {
         }
 
         next.speed = next.speedKnob;
-        if (settings.speedBLE > 0.0 || wasLastSpeedCommandFromBLE()) {
-            if (USE_SPEED_KNOB_AS_LIMIT) {
-                next.speed = next.speedKnob * settings.speedBLE / 100;
-            } else if (wasLastSpeedCommandFromBLE()) {
-                next.speed = settings.speedBLE;
-            }
+        if (settings.speedBLE > 0.0 && wasLastSpeedCommandFromBLE()) {
+            next.speed = settings.speedBLE;
         }
 
         if (next.speed != settings.speed) {
@@ -87,9 +87,8 @@ static void drawPlayControlsTask(void *pvParameters) {
         }
 
         settings.speedKnob = next.speedKnob;
-        encoderValue = encoder.readEncoder();
 
-        switch (settings.playControl) {
+        switch (loopControl) {
             case ui::PlayControls::MIN_POSITION:
                 next.minPosition = encoderValue;
                 if (next.minPosition >= settings.maxPosition) {
@@ -149,7 +148,7 @@ static void drawPlayControlsTask(void *pvParameters) {
             data.sensation = settings.sensation;
             data.maxPosition = settings.maxPosition;
             data.buffer = settings.buffer;
-            data.activeControl = settings.playControl;
+            data.activeControl = loopControl;
             data.pattern = (int)settings.pattern;
             data.isStrokeEngine = isStrokeEngine;
             data.isStreaming = isStreaming;

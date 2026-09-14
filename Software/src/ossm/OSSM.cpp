@@ -23,6 +23,9 @@ void OSSM::ble_click(String commandString) {
     }
 
     switch (command.command) {
+        case Commands::goToUpdate:
+            stateMachine->process_event(TryUpdate{});
+            break;
         case Commands::goToStrokeEngine:
             menuState.currentOption = Menu::StrokeEngine;
             if (stateMachine != nullptr) {
@@ -99,12 +102,17 @@ void OSSM::ble_click(String commandString) {
     }
 }
 
-String OSSM::getStateFingerprint() {
+String OSSM::getCurrentStateName() {
     String currentState;
     if (stateMachine != nullptr) {
         stateMachine->visit_current_states(
             [&currentState](auto state) { currentState = state.c_str(); });
     }
+    return currentState;
+}
+
+String OSSM::getStateFingerprint() {
+    String currentState = getCurrentStateName();
 
     String output = currentState + ":";
     output += String((int)settings.speed) + ":";
@@ -116,11 +124,7 @@ String OSSM::getStateFingerprint() {
 }
 
 String OSSM::getCurrentState() {
-    String currentState;
-    if (stateMachine != nullptr) {
-        stateMachine->visit_current_states(
-            [&currentState](auto state) { currentState = state.c_str(); });
-    }
+    String currentState = getCurrentStateName();
 
     return "{\"timestamp\":" + String((unsigned long)millis()) +
            ",\"state\":\"" + currentState +

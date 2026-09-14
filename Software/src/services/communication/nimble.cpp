@@ -56,10 +56,13 @@ class ServerCallbacks : public NimBLEServerCallbacks {
 
 void notifyValue(const char* uuid, String value) {
     NimBLEService* ossmService = pServer->getServiceByUUID(OSSM_SERVICE_UUID);
-    NimBLECharacteristic* speedChar = ossmService->getCharacteristic(uuid);
-    speedChar->setValue(value);
-    speedChar->notify();
-    pulseForCommunication();
+    NimBLECharacteristic* noteChar = ossmService->getCharacteristic(uuid);
+    if (value != noteChar->getValue()) {
+        ESP_LOGD("NIMBLE", "Notifying: %s", value.c_str());
+        noteChar->setValue(value);
+        noteChar->notify();
+        pulseForCommunication();
+    }
 }
 
 void nimbleLoop(void* pvParameters) {
@@ -192,6 +195,10 @@ void nimbleLoop(void* pvParameters) {
             notifyValue(SPEED_UUID, String(settings.speed));
             notifyValue(MAXDEP_UUID, String(settings.maxPosition));
             notifyValue(MINDEP_UUID, String(settings.minPosition));
+            notifyValue(SENSAT_UUID, String(settings.sensation));
+            notifyValue(SENPAT_UUID, String((int)settings.pattern));
+
+            notifyValue(STATE_UUID, ossm->getCurrentStateName());
             pulseForCommunication();
         }
 
@@ -217,36 +224,41 @@ void initNimble() {
 
     // OSSM Service Items
     advanced_penetration::initNimble(ossmService);
-    initCharacteristic(ossmService, NimBLEUUID(HOMING_UUID),&homingTypeConfigCallbacks,"Homing Type: 0=None, 1=Default, 2=Single Sided, 3=Double Tap");
-    initCharacteristic(ossmService, NimBLEUUID(LENGTH_UUID),&railLengthConfigCallbacks,"Rail length. Used for single sided and disabled homing.");
-    initCharacteristic(ossmService, NimBLEUUID(REHOME_UUID),&ReHomeConfigCallbacks,"Rehome the device between modes.");
-    initCharacteristic(ossmService, NimBLEUUID(INVERT_UUID), &directionConfigCallbacks, "Reverse rail direction. Changing will cause reboot.");
-    initCharacteristic(ossmService, NimBLEUUID(RENAME_UUID), &renameConfigCallbacks, "Name of the device. Changing will cause reboot.");
-    initCharacteristic(ossmService, NimBLEUUID(GPIO_UUID), &gpioCallbacks, "GPIO");
+    initCharacteristic(ossmService, NimBLEUUID(HOMING_UUID),&homingTypeConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(LENGTH_UUID),&railLengthConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(REHOME_UUID),&ReHomeConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(INVERT_UUID), &directionConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(RENAME_UUID), &renameConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(GPIO_UUID), &gpioCallbacks);
     initUpdateCharacteristic(ossmService, NimBLEUUID(UPDATE_UUID));
     initWiFiConfigCharacteristic(ossmService, NimBLEUUID(WIFI_UUID));
-    initCharacteristic(ossmService, NimBLEUUID(MACCEL_UUID),&maxAccelerationConfigCallbacks,"Maximum acceleration in mm/s/s.");
-    initCharacteristic(ossmService, NimBLEUUID(MAXRPM_UUID),&motorRPMConfigCallbacks,"Max RPM of the motor. Limits top speed.");
-    initCharacteristic(ossmService, NimBLEUUID(STEPPR_UUID), &motorStepsConfigCallbacks, "Motor steps per revolution.");
-    initCharacteristic(ossmService, NimBLEUUID(PULLEY_UUID), &pulleyTeethConfigCallbacks, "Number of teeth on the drive pulley.");
-    initCharacteristic(ossmService, NimBLEUUID(BPITCH_UUID), &beltPitchConfigCallbacks, "Belt pitch. Distance between the centers of two teeth in mm.");
-    initCharacteristic(ossmService, NimBLEUUID(SENSOR_UUID), &sensorLimitConfigCallbacks, "Homing current sensor limit.");
-    initCharacteristic(ossmService, NimBLEUUID(SPDCRV_UUID), &speedCurveConfigCallbacks, "Speed ramp curve.");
-    initCharacteristic(ossmService, NimBLEUUID(SPDHOM_UUID), &homingSpeedConfigCallbacks, "Homing speed in mm/s.");
+    initCharacteristic(ossmService, NimBLEUUID(MACCEL_UUID),&maxAccelerationConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(MAXRPM_UUID),&motorRPMConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(STEPPR_UUID), &motorStepsConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(PULLEY_UUID), &pulleyTeethConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(BPITCH_UUID), &beltPitchConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(SENSOR_UUID), &sensorLimitConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(SPDCRV_UUID), &speedCurveConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(SPDHOM_UUID), &homingSpeedConfigCallbacks);
 
     //Shared OSSM Settings
-    initCharacteristic(ossmService, NimBLEUUID(SPEED_UUID), &speedCallbacks, "Common setting for speed");
-    initCharacteristic(ossmService, NimBLEUUID(MAXDEP_UUID), &maxDepthCallbacks, "Common setting for maximum depth");
-    initCharacteristic(ossmService, NimBLEUUID(MINDEP_UUID), &minDepthCallbacks, "Common setting for minimum depth");
+    initCharacteristic(ossmService, NimBLEUUID(SPEED_UUID), &speedCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(MAXDEP_UUID), &maxDepthCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(MINDEP_UUID), &minDepthCallbacks);
     initOffsetCharacteristic(ossmService, NimBLEUUID(OFFSET_UUID));
-    initCharacteristic(ossmService, NimBLEUUID(BUFFER_UUID), &latencyCompensationConfigCallbacks, "Enable buffer");
-    initCharacteristic(ossmService, NimBLEUUID(STREAM_UUID), &streamCallbacks, "Streaming commands for the device. pos:ms");
+    initCharacteristic(ossmService, NimBLEUUID(BUFFER_UUID), &latencyCompensationConfigCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(STREAM_UUID), &streamCallbacks);
+
+    initStateCharacteristic(ossmService, NimBLEUUID(STATE_UUID));
+    initCharacteristic(ossmService, NimBLEUUID(SENSAT_UUID), &sensationCallbacks);
+    initCharacteristic(ossmService, NimBLEUUID(SENPAT_UUID), &strokeEnginePatternCallbacks);
+    initSimplePatternCharacteristic(ossmService, NimBLEUUID(SENPTL_UUID));
 
     // Lecacy Service Items
     initCommandCharacteristic(lecacyService, NimBLEUUID(LEGACY_COMMAND_UUID));
     initStateCharacteristic(lecacyService, NimBLEUUID(CHARACTERISTIC_STATE_UUID));
-    initCharacteristic(lecacyService, NimBLEUUID(SPEED_KNOB_UUID), &speedKnobConfigCallbacks, "Use wired controller knob as speed limit.");
-    initCharacteristic(lecacyService, NimBLEUUID(BUFFER_UUID),&latencyCompensationConfigCallbacks,"Enable latency compensation for streaming mode.");
+    initCharacteristic(lecacyService, NimBLEUUID(SPEED_KNOB_UUID), &speedKnobConfigCallbacks);
+    initCharacteristic(lecacyService, NimBLEUUID(BUFFER_UUID),&latencyCompensationConfigCallbacks);
     initPatternsCharacteristic(lecacyService, NimBLEUUID(PATTERN_UUID));
     initPatternDataCharacteristic(lecacyService, NimBLEUUID(PATTERN_DATA_UUID));
 

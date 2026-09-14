@@ -17,7 +17,7 @@
       <p>11. Funscript Player</p>
     </hgroup>
     <p>Select a video file, and a funscript. Set speed and depth limits. While the video is paused, min and max depth will move the OSSM to those positions. Device will not move if the speed limit is not set.</p>
-    <button id="connect" onclick="connectFunscript();">Connect to OSSM</button>
+    <button id="connect" onclick="connectFunscript();">Connect to Play</button>
     <article id="controls" style="display: none;">
       <video loop id="video" controls muted style="width: 100%;"
               onplay="playStream()" onpause="pauseStream()" onseeked="seekStream()">
@@ -50,19 +50,19 @@
     </article>
     <p></p>
     <p>
-      <strong>Requirements:</strong> Chrome, Edge, or Opera on desktop (not mobile).
+      <strong>Requirements:</strong> Chrome, Edge, or Opera on desktop or Android.
     </p>
     <a href="preset.html">Previous</a> |
-    <a href="index.html">Home</a>
+    <a href="index.html">Home</a> |
+    <a href="strokeengine.html">Next</a>
     <dialog id="oldFirmware">
       <article>
         <header>
           <button aria-label="Close" rel="prev" data-target="modal-example" onclick="firmareClose()"></button>
-          <h3>Firmware out of date!</h3>
+          <h3>Could not connect to OSSM!</h3>
         </header>
         <p>
-          The firmware on your OSSM is out of date and doesn't support this feature. Go back to the 
-          <a href="index.html">beginning</a> of this guide and update your device.
+          Likely causes, in order of likelyhood: You're using an unsupported browser that doesn't have access to bluetooth, your bluetooth adapter is not capable of connecting, or your firmware is out of date. 
         </p>
         <footer>
           <button autofocus="" onclick="firmareClose()">

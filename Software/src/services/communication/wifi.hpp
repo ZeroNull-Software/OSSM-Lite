@@ -90,9 +90,6 @@ inline NimBLECharacteristic* initWiFiConfigCharacteristic(NimBLEService* pServic
     NimBLECharacteristic* pChar = pService->createCharacteristic(
         uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ);
 
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Wifi configuration and status");
-
     pChar->setCallbacks(&wifiConfigCallbacks);
     
     // Set initial value to current WiFi status
@@ -110,8 +107,6 @@ class UpdateCallbacks : public NimBLECharacteristicCallbacks {
 inline NimBLECharacteristic* initUpdateCharacteristic(NimBLEService* pService, NimBLEUUID uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
     pChar->setCallbacks(&updateCallbacks);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Trigger an over-the-air update.");
     return pChar;
 }
 
