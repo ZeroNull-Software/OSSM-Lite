@@ -1,6 +1,7 @@
 #include "actions.h"
 
 #include "ossm/advanced_penetration/advanced_penetration.h"
+#include "ossm/calibration/calibration.h"
 #include "ossm/homing/homing.h"
 #include "ossm/menu/menu.h"
 #include "ossm/pages/error.h"
@@ -46,6 +47,14 @@ void ossmDrawPatternControls() {
 }
 
 void ossmDrawPreflight() { pages::drawPreflight(); }
+
+void ossmDrawUserCalibration() {
+    user_calibration::drawUserCalibration();
+}
+
+void ossmConfirmUserCalibration() {
+    user_calibration::onConfirm();
+}
 
 void ossmResetSettingsStrokeEngine() {
     settings.speed = 0;

@@ -79,11 +79,16 @@ struct OSSMStateMachine {
             "strokeEngine.idle"_s + returnToMenu / emergencyStop = "menu"_s,
             "strokeEngine.idle"_s + tryUpdate / emergencyStop = "update"_s,
 
+            "strokeEngine.pattern"_s + buttonPress[isCalibrationOption] / drawUserCalibration = "usercalibration"_s,
             "strokeEngine.pattern"_s + buttonPress / drawPlayControls = "strokeEngine.idle"_s,
             "strokeEngine.pattern"_s + doublePress / drawPlayControls = "strokeEngine.idle"_s,
             "strokeEngine.pattern"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.pattern"_s + returnToMenu / emergencyStop = "menu"_s,
             "strokeEngine.pattern"_s + tryUpdate / emergencyStop = "update"_s,
+
+            "usercalibration"_s + buttonPress / confirmUserCalibration = "usercalibration"_s,
+            "usercalibration"_s + done / (drawPatternControls, startStrokeEngine) = "strokeEngine.pattern"_s,
+            "usercalibration"_s + longPress / (emergencyStop, drawPatternControls, startStrokeEngine) = "strokeEngine.pattern"_s,
 
             "streaming"_s [isNotHomed] = "homing"_s,
             "streaming"_s [isPreflightSafe] / (resetSettingsStreaming, drawPlayControls, startStreaming) = "streaming.idle"_s,

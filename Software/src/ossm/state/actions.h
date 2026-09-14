@@ -10,6 +10,8 @@ void ossmDrawPlayControls();
 void ossmStartStreaming();
 void ossmDrawPatternControls();
 void ossmDrawPreflight();
+void ossmDrawUserCalibration();
+void ossmConfirmUserCalibration();
 void ossmResetSettingsStrokeEngine();
 void ossmResetSettingsStreaming();
 void ossmAdvancedClick();
@@ -47,6 +49,10 @@ namespace actions {
     constexpr auto drawPatternControls = []() { ossmDrawPatternControls(); };
 
     constexpr auto drawPreflight = []() { ossmDrawPreflight(); };
+
+    constexpr auto drawUserCalibration = []() { ossmDrawUserCalibration(); };
+
+    constexpr auto confirmUserCalibration = []() { ossmConfirmUserCalibration(); };
 
     constexpr auto resetSettingsStrokeEngine = []() {
         ossmResetSettingsStrokeEngine();
