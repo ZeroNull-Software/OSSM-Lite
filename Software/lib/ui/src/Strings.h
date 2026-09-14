@@ -119,13 +119,15 @@ namespace ui {
         static const char patternName10[] PROGMEM = "Slap Stroke";
         static const char patternName11[] PROGMEM = "Random Stroke";
         static const char patternName12[] PROGMEM = "Go to Point";
+        static const char patternName13[] PROGMEM = "Stroke Calibration";
 
-        static const char* const strokeEngineNames[13] = {
+        static const char* const strokeEngineNames[14] = {
                 patternName0, patternName1, patternName2,
                 patternName3, patternName4, patternName5,
                 patternName6, patternName7, patternName8,
                 patternName9, patternName10,patternName11,
                 patternName12,
+                patternName13,
         };
 
         // ============================================================
@@ -158,13 +160,16 @@ namespace ui {
             "Random Stroke. Sensation controls maximum randomness from current location.";
         static const char patternDesc12[] PROGMEM =
             "Moves to a point between depth and stroke based on sensation.";
+        static const char patternDesc13[] PROGMEM =
+            "Calibrate your min and max stroke positions.";
 
-        static const char* const strokeEngineDescriptions[13] = {
+        static const char* const strokeEngineDescriptions[14] = {
                 patternDesc0, patternDesc1, patternDesc2,
                 patternDesc3, patternDesc4, patternDesc5,
                 patternDesc6, patternDesc7, patternDesc8,
                 patternDesc9, patternDesc10,patternDesc11,
                 patternDesc12,
+                patternDesc13,
         };
 
     }  // namespace strings
