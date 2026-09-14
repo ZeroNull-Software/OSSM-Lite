@@ -13,7 +13,7 @@
 #include "services/led.h"
 
 static const std::regex commandRegex(
-    R"(go:(strokeEngine|streaming|menu)|set:(max|min|speed|stroke|depth|sensation|buffer|pattern):\d+|set:wifi:[^|]+\|.+|stream:\d+:\d+)");
+    R"(go:(strokeEngine|streaming|update|menu)|set:(max|min|speed|stroke|depth|sensation|buffer|pattern):(\d|\.)+|set:wifi:[^|]+\|.+|stream:(\d|\.)+:\d+)");
 
 /** Handler class for characteristic actions */
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
@@ -37,16 +37,12 @@ class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
 
 inline NimBLECharacteristic* initCommandCharacteristic(NimBLEService* pService, NimBLEUUID uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE_NR);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Input commands to the device.");
     pChar->setCallbacks(&chrCallbacks);
     return pChar;
 }
 
-NimBLECharacteristic* initCharacteristic(NimBLEService* pService, std::string uuid, NimBLECharacteristicCallbacks* callbacks, String description) {
+NimBLECharacteristic* initCharacteristic(NimBLEService* pService, std::string uuid, NimBLECharacteristicCallbacks* callbacks) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue(description);
     pChar->setCallbacks(callbacks);
     return pChar;
 }
@@ -95,6 +91,41 @@ class MinDepthCallbacks : public NimBLECharacteristicCallbacks {
     }
 } inline minDepthCallbacks;
 
+class SensationCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        float value = std::stof(pCharacteristic->getValue());
+        settings.sensation = constrain(value, 0.0, 100.0);
+        settings.playControl = ui::PlayControls::SENSATION;
+        encoder.setEncoderValue(settings.sensation);
+        pulseForCommunication();
+    }
+    void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        pCharacteristic->setValue(String(settings.sensation));
+    }
+} inline sensationCallbacks;
+
+void startStrokeEngine() {
+    if (!(stateMachine->is("strokeEngine"_s ) || stateMachine->is("strokeEngine.idle"_s) || stateMachine->is("strokeEngine.pattern"_s))) {
+        stateMachine->process_event(LongPress{});
+        menuState.currentOption = Menu::StrokeEngine;
+        settings.speedBLE = 0.0;
+        stateMachine->process_event(ButtonPress{});
+    }
+}
+
+class StrokeEnginePatternCallbacks : public NimBLECharacteristicCallbacks {
+    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        startStrokeEngine();
+        int value = std::stoi(pCharacteristic->getValue());
+        settings.pattern = static_cast<StrokePatterns>((int)value % (int)StrokePatterns::Count);
+        pulseForCommunication();
+    }
+    void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
+        startStrokeEngine();
+        pCharacteristic->setValue(String((int)settings.pattern));
+    }
+} inline strokeEnginePatternCallbacks;
+
 class OffsetCallbacks : public NimBLECharacteristicCallbacks {
     void onRead(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
         pCharacteristic->setValue(String(settings.buffer));
@@ -103,8 +134,6 @@ class OffsetCallbacks : public NimBLECharacteristicCallbacks {
 
 NimBLECharacteristic* initOffsetCharacteristic(NimBLEService* pService, std::string uuid) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Provides offset for automatic sync");
     pChar->setCallbacks(&offsetCallbacks);
     return pChar;
 }
@@ -113,6 +142,7 @@ void startStreaming() {
     if (!(stateMachine->is("streaming"_s) || stateMachine->is("streaming.idle"_s))) {
         stateMachine->process_event(LongPress{});
         menuState.currentOption = Menu::Streaming;
+        settings.speedBLE = 0.0;
         stateMachine->process_event(ButtonPress{});
     }
 }

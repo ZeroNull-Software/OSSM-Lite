@@ -61,7 +61,7 @@ void StrokeEngine::setDepth(float depth, bool applyNow = false) {
 
         pattern->setDepth(_depth);
 
-        ESP_LOGD(SE, "Depht: %f", _depth);
+        ESP_LOGD(SE, "Depth: %d", _depth);
 
         // When running a pattern and immediate update requested:
         if ((_state == PATTERN) && (applyNow == true)) {
@@ -86,7 +86,7 @@ void StrokeEngine::setStroke(float stroke, bool applyNow = false) {
 
         pattern->setStroke(_stroke);
 
-        ESP_LOGD(SE, "Stroke: %f", _stroke);
+        ESP_LOGD(SE, "Stroke: %d", _stroke);
 
         // When running a pattern and immediate update requested:
         if ((_state == PATTERN) && (applyNow == true)) {
@@ -126,12 +126,32 @@ void StrokeEngine::setSensation(float sensation, bool applyNow = false) {
 }
 
 bool StrokeEngine::setPattern(StrokePatterns NextPattern, bool applyNow = false) {
-    // Free up memory from previous pattern
-    delete pattern;
-    pattern = Pattern::Create(NextPattern);
+    // Reject invalid pattern indices and retain the previous pattern.
+    if ((NextPattern < StrokePatterns::SimpleStroke) ||
+        (NextPattern >= StrokePatterns::Count)) {
+        ESP_LOGE(SE, "Invalid pattern index: %d", (int)NextPattern);
+        return false;
+    }
 
-    // Inject current motion parameters into new pattern
+    // Build the replacement before letting go of the current one, so the engine
+    // is never left without a valid pattern.
+    Pattern *nextPattern = Pattern::Create(NextPattern);
+    if (nextPattern == NULL) {
+        ESP_LOGE(SE, "Out of memory creating pattern: %d", (int)NextPattern);
+        return false;
+    }
+
+    // The stroking task dereferences `pattern` while holding _patternMutex, so
+    // the pointer may only be swapped under that same mutex. Deleting and
+    // re-creating it unlocked is a use-after-free: the stroking task can read
+    // members of the freed object, or dispatch through a stale vtable pointer
+    // into the freshly allocated replacement.
+    Pattern *previousPattern = NULL;
     if (xSemaphoreTake(_patternMutex, portMAX_DELAY) == pdTRUE) {
+        previousPattern = pattern;
+        pattern = nextPattern;
+
+        // Inject current motion parameters into new pattern
         pattern->setSpeedLimit(_maxStepPerSecond, _maxStepAcceleration, _machine->stepsPerMillimeter);
         pattern->setStroke(_stroke);
         pattern->setDepth(_depth);
@@ -153,7 +173,17 @@ bool StrokeEngine::setPattern(StrokePatterns NextPattern, bool applyNow = false)
 
         // give back mutex
         xSemaphoreGive(_patternMutex);
+    } else {
+        // The replacement was never published, so drop it and keep the current
+        // pattern.
+        delete nextPattern;
+        return false;
     }
+
+    // Free the previous pattern outside the mutex. It is no longer reachable by
+    // any other task once swapped above, so this cannot race with the stroking
+    // task, and it keeps the critical section short.
+    delete previousPattern;
 
     return true;
 }
@@ -221,23 +251,10 @@ void StrokeEngine::stopMotion() {
         _servo->stopMove();
 
         ESP_LOGD(SE,"Motion stopped");
-
-        // Wait for _servo stopped
-        while (_servo->isRunning())
-        ;
-
-        // Send telemetry data
-        if (_callbackTelemetry != NULL) {
-            _callbackTelemetry(float(_servo->getCurrentPosition() / _machine->stepsPerMillimeter), 0.0, false);
-        }
     }
 }
 
 ServoState StrokeEngine::getState() { return _state; }
-
-void StrokeEngine::registerTelemetryCallback(void (*callbackTelemetry)(float, float, bool)) {
-    _callbackTelemetry = callbackTelemetry;
-}
 
 void StrokeEngine::_stroking() {
     motionParameter currentMotion;
@@ -257,7 +274,7 @@ void StrokeEngine::_stroking() {
 
                 // Increase deceleration if required to avoid crash
                 if (_servo->getAcceleration() > currentMotion.acceleration) {
-                    ESP_LOGD(SE,"Crash avoidance! Set acceleration from %f to %f",currentMotion.acceleration,_servo->getAcceleration());
+                    ESP_LOGD(SE,"Crash avoidance! Set acceleration from %d to %d",currentMotion.acceleration,_servo->getAcceleration());
                     currentMotion.acceleration = _servo->getAcceleration();
                 }
 
@@ -305,18 +322,8 @@ void StrokeEngine::_applyMotionProfile(motionParameter *motion) {
     // Apply new trapezoidal motion profile to _servo if pattern does not skip
     if (motion->skip == false) {
         // Constrain speed to below _maxStepPerSecond
-        if (motion->speed > _maxStepPerSecond) {
-            ESP_LOGD(SE,"Constrain speed: %f -> %f mm/s", motion->speed, _maxStepPerSecond);
-            motion->speed = _maxStepPerSecond;
-            clipping = true;
-        }
-
-        // Constrain acceleration between 1 step/sec^2 and _maxStepAcceleration
-        if (motion->acceleration > _maxStepAcceleration) {
-            ESP_LOGD(SE,"Constrain acceleration: %f -> %f mm/s²", motion->acceleration, _maxStepAcceleration);
-            motion->acceleration = _maxStepAcceleration;
-            clipping = true;
-        }
+        motion->speed = constrain(motion->speed, 1, _maxStepPerSecond);
+        motion->acceleration = constrain(motion->acceleration, 1, _maxStepAcceleration);
 
         // Constrain stroke to motion envelope
         int pos = constrain((motion->stroke), _minStep, _maxStep);
@@ -329,11 +336,5 @@ void StrokeEngine::_applyMotionProfile(motionParameter *motion) {
         // Compile speed telemetry data
         speed = float(motion->speed / _machine->stepsPerMillimeter);
         position = float(pos / _machine->stepsPerMillimeter);
-
-
-        // Send telemetry data
-        if (_callbackTelemetry != NULL) {
-            _callbackTelemetry(position, speed, clipping);
-        }
     }
 }

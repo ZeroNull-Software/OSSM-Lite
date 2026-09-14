@@ -27,6 +27,7 @@ namespace advanced_penetration {
 
     static void startAdvancedPenetrationMotionTask(void* pvParameters) {
         u32_t strokeCount = 1;
+        u32_t maxAccel = u32_t(UserConfig::getStepsPerMM(UserConfig::getMaxAcceleration()));
         while (stateMachine->is("advancedPenetration"_s) || stateMachine->is("advancedPenetration.idle"_s) ||
                stateMachine->is("advancedPenetration.presets"_s)) {
             if (currentSettings.speed.value == 0.0) {
@@ -53,6 +54,9 @@ namespace advanced_penetration {
                 targetPosition = targetPosition * currentSettings.minDepth.getNormalizedModifiedValue(strokeCount);
             }
             stepper->setSpeedInHz(speed);
+            if(speed == 0.0) {
+                stepper->setAcceleration(maxAccel);
+            }
             stepper->applySpeedAcceleration();
 
             u32_t distance = abs(targetPosition - stepper->getCurrentPosition());
@@ -63,7 +67,7 @@ namespace advanced_penetration {
             } else {
                 acceleration += minAccel * 9 * currentSettings.outAcceleration.getRampedModifiedValue(0.6, strokeCount);
             }
-            acceleration = min(acceleration, u32_t(UserConfig::getStepsPerMM(UserConfig::getMaxAcceleration())));
+            acceleration = min(acceleration, maxAccel);
             if (acceleration > stepper->getAcceleration() || !stepper->isRunning()) {
                 stepper->setAcceleration(acceleration);
                 stepper->applySpeedAcceleration();
@@ -140,20 +144,18 @@ namespace advanced_penetration {
     } apStatusCB;
 
     NimBLECharacteristic* initCharacteristic(NimBLEService* pService, std::string uuid, uint32_t properties,
-                                             NimBLECharacteristicCallbacks* callbacks, String description) {
+                                             NimBLECharacteristicCallbacks* callbacks) {
         NimBLECharacteristic* pChar = pService->createCharacteristic(NimBLEUUID(uuid), properties);
-        NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-        pDesc->setValue(description);
         pChar->setCallbacks(callbacks);
         return pChar;
     }
 
     void initNimble(NimBLEService* service) {
         initPresets();
-        initCharacteristic(service, CHARACTERISTIC_ADVANCED_CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE_NR, &apComandCB,"Advanced Controls");
-        initCharacteristic(service, CHARACTERISTIC_ADVANCED_CONFIG_UUID, NIMBLE_PROPERTY::READ, &apConfigCB, "Advanced Configuration");
-        initCharacteristic(service, CHARACTERISTIC_ADVANCED_PRESETS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, &apPresetCB, "Advanced Preset List");
-        statusNotifier = initCharacteristic(service, CHARACTERISTIC_ADVANCED_STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, &apStatusCB, "Advanced Status"); 
+        initCharacteristic(service, CHARACTERISTIC_ADVANCED_CONTROL_UUID, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE_NR, &apComandCB);
+        initCharacteristic(service, CHARACTERISTIC_ADVANCED_CONFIG_UUID, NIMBLE_PROPERTY::READ, &apConfigCB);
+        initCharacteristic(service, CHARACTERISTIC_ADVANCED_PRESETS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE, &apPresetCB);
+        statusNotifier = initCharacteristic(service, CHARACTERISTIC_ADVANCED_STATUS_UUID, NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::NOTIFY, &apStatusCB); 
     }
 
     void startAdvancedPenetration() {

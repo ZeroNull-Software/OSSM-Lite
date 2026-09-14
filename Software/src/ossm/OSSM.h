@@ -27,6 +27,8 @@ class OSSM {
     // BLE command handler
     void ble_click(String commandString);
 
+    String getCurrentStateName();
+    
     // Get current state as JSON string (includes timestamp)
     String getCurrentState();
 
