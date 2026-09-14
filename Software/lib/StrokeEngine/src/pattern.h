@@ -21,10 +21,13 @@ enum class StrokePatterns {
     TeasingPounding,
     RoboStroke,
     HalfnHalf,
+    HalfnOut,
     Deeper,
     StopNGo,
     Insist,
     ProgressiveStroke,
+    Knot,
+    Slap,
     RandomStroke,
     PointStroke,
     //Add additional strokes here
@@ -402,6 +405,82 @@ class HalfnHalf : public Pattern {
 
 /**************************************************************************/
 /*!
+  @brief  Like Teasing or Pounding, but every second stroke is only pulling
+  half the way out. The sensation value can change the speed ratio between
+  in and out. Sensation > 0 make the in move faster (up to 5x) giving a hard
+  pounding sensation. Values < 0 make the out move going faster. This gives
+  a more pleasing sensation. The time for the overall stroke remains the same
+  for all strokes, even half ones.
+*/
+/**************************************************************************/
+class HalfnOut : public Pattern {
+  public:
+    void setSensation(float sensation) {
+        _sensation = sensation;
+        _updateStrokeTiming();
+    }
+    void setSpeed(float speed = 0) {
+        _speed = speed;
+        _updateStrokeTiming();
+    }
+    void setStroke(int stroke) {
+        _stroke = stroke;
+        _updateStrokeTiming();
+    }
+    motionParameter nextTarget(unsigned int index) {
+        const bool half = ((index / 2) % 2) == 0;
+        // set-up the stroke length
+        int stroke = _stroke;
+        if (half == true) {
+            // half the stroke length
+            stroke = _stroke / 2;
+        }
+        // odd stroke is moving out
+        if (index % 2) {
+            // maximum speed of the trapezoidal motion
+            _nextMove.speed = int(1.5 * _stroke / _timeOfOutStroke);
+            // acceleration to meet the profile
+            _nextMove.acceleration = int(3.0 * float(_nextMove.speed) / _timeOfOutStroke);
+            _nextMove.stroke = _depth - stroke;
+            // even stroke is moving in
+        } else {
+            // maximum speed of the trapezoidal motion
+            _nextMove.speed = int(1.5 * _stroke / _timeOfInStroke);
+            // acceleration to meet the profile
+            _nextMove.acceleration = int(3.0 * float(_nextMove.speed) / _timeOfInStroke);
+            _nextMove.stroke = _depth;
+        }
+        _index = index;
+        return _nextMove;
+    }
+
+  protected:
+    float _timeOfFastStroke = 1.0;
+    float _timeOfInStroke = 1.0;
+    float _timeOfOutStroke = 1.0;
+    void _updateStrokeTiming() {
+        if (_stroke == 0 || _speed == 0) return;
+        // time of a trapezoidal motion maximizing at speed
+        _timeOfStroke = 1.5 * _stroke / _speed;
+        // calculate the time it takes to complete the faster stroke
+        // Division by 2 because reference is a half stroke
+        _timeOfFastStroke = _timeOfStroke * fscale(0.0, 100.0, 1.0, .25, abs(_sensation), 0.0);
+        // positive sensation, in is faster
+        if (_sensation > 0.0) {
+            _timeOfInStroke = _timeOfFastStroke;
+            _timeOfOutStroke = _timeOfStroke * 2 - _timeOfFastStroke;
+            // negative sensation, out is faster
+        } else {
+            _timeOfOutStroke = _timeOfFastStroke;
+            _timeOfInStroke = _timeOfStroke * 2 - _timeOfFastStroke;
+        }
+        ESP_LOGV(SE,"TimeOfInStroke", _timeOfInStroke);
+        ESP_LOGV(SE,"TimeOfOutStroke", _timeOfOutStroke);
+    }
+};
+
+/**************************************************************************/
+/*!
   @brief  The insertion depth ramps up gradually with each stroke until it
   reaches its maximum. It then resets and restars. Sensations controls how
   many strokes there are in a ramp.
@@ -642,6 +721,82 @@ class ProgressiveStroke : public Pattern {
 
 /**************************************************************************/
 /*!
+  @brief  Knot stroke is a three part stroke.
+  1. In to a depth determined by sensation %
+  2. In at 70% speed to full depth.
+  3. Out to the starting point.
+*/
+/**************************************************************************/
+class KnotStroke : public Pattern {
+  public:
+    motionParameter nextTarget(unsigned int index) {
+        switch (index % 3) {
+            case 0:
+                _nextMove.speed = _speed * 0.75;
+                _nextMove.stroke = _depth - _stroke;
+                break;
+            case 1:
+                _nextMove.speed = _speed;
+                _nextMove.stroke = _depth - _stroke * (1-((_sensation + 100)/200.0));
+                break;
+            default:
+                _nextMove.speed = _speed * 0.5;
+                _nextMove.stroke = _depth;
+                break;
+        }
+        _timeOfStroke = std::max(1.5 * _stroke / _nextMove.speed, 0.01);
+        _nextMove.acceleration = int(3.0 * float(_nextMove.speed) / _timeOfStroke);
+        _index = index;
+        return _nextMove;
+    }
+};
+
+/**************************************************************************/
+/*!
+  @brief  Slap stroke is a four part stroke.
+  1. In to 100% with max acceleration
+  2. Out to 90% at max acceleration
+  3. Out to the starting point.
+  4. Pause for some time.
+*/
+/**************************************************************************/
+class SlapStroke : public Pattern {
+  public:
+    void setSensation(float sensation) {
+        _sensation = sensation;
+        // maps sensation to a delay from 100ms to 10 sec
+        _updateDelay(map(sensation, -100, 100, 100, 10000));
+    }
+    motionParameter nextTarget(unsigned int index) {
+        _nextMove.speed = _speed;
+        _nextMove.acceleration = _maxAcceleration;
+        if (_isStillDelayed() == false) {
+            switch (index % 3) {
+                case 0:
+                    _nextMove.speed = _speed * 0.5;
+                    _nextMove.stroke = _depth - _stroke;
+                    _timeOfStroke = std::max(1.5 * _stroke / _nextMove.speed, 0.01);
+                    _nextMove.acceleration = int(3.0 * float(_nextMove.speed) / _timeOfStroke);
+                    _startDelay();
+                    break;
+                case 1:
+                    _nextMove.stroke = _depth - _stroke * 0.1;
+                    break;
+                default:
+                    _nextMove.stroke = _depth;
+                    break;
+            }
+            _nextMove.skip = false;
+        } else {
+            _nextMove.skip = true;
+        }
+        _index = index;
+        return _nextMove;
+    }
+};
+
+/**************************************************************************/
+/*!
   @brief  Random... hehe
 */
 /**************************************************************************/
@@ -675,9 +830,7 @@ class RandomStroke : public Pattern {
 
 /**************************************************************************/
 /*!
-  @brief  Simple Stroke Pattern. It creates a trapezoidal stroke profile
-  with 1/3 acceleration, 1/3 coasting, 1/3 deceleration. Sensation creates
-  randomness to either the depth or the stroke while respecting bounds.
+  @brief  Moves to a point as defined by the sensation.
 */
 /**************************************************************************/
 class PointStroke : public Pattern {
@@ -713,6 +866,8 @@ inline Pattern* Pattern::Create(StrokePatterns pattern){
             return new RoboStroke();
         case StrokePatterns::HalfnHalf:
             return new HalfnHalf();
+        case StrokePatterns::HalfnOut:
+            return new HalfnOut();
         case StrokePatterns::Deeper:
             return new Deeper();
         case StrokePatterns::StopNGo:
@@ -721,6 +876,10 @@ inline Pattern* Pattern::Create(StrokePatterns pattern){
             return new Insist();
         case StrokePatterns::ProgressiveStroke:
             return new ProgressiveStroke();
+        case StrokePatterns::Knot:
+            return new KnotStroke();
+        case StrokePatterns::Slap:
+            return new SlapStroke();
         case StrokePatterns::RandomStroke:
             return new RandomStroke();
         case StrokePatterns::PointStroke:

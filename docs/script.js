@@ -367,10 +367,6 @@ async function setPresetString() {
             if (element != null) {
                 if (sub != null && sub.length > j) {
                     if ((element.value == "" && element.placeholder != sub[j]) || (element.value != "" && element.value != sub[j])) {
-                    console.log(element.id);
-                    console.log(element.value);
-                    console.log(element.placeholder);
-                    console.log(sub[j]);
                         setTimeout(() => {
                             element = document.getElementById(base + mod);
                             element.value = sub[j];
@@ -439,7 +435,6 @@ async function initSetting(element, uuid) {
         let characteristicRef = await serviceRef.getCharacteristic(uuid);
         console.log("Characteristic " + decodeHex(uuid) + " connected.")
         if (characteristicRef.properties.notify) {
-            console.log("notification?");
             await characteristicRef.startNotifications().then(
                 function() {
                     characteristicRef.addEventListener('characteristicvaluechanged', (event) => readSetting(event, element, characteristicRef));
@@ -456,7 +451,6 @@ async function initSetting(element, uuid) {
 }
 
 async function readSetting(event, element, characteristicRef) {
-    console.log("read");
     var value;
     if (event != null) {
         value = event.target.value;
@@ -580,8 +574,6 @@ async function parseFunscript(content) {
         }
       }
     )
-    console.log(funscriptData.actions);
-    console.log(funscriptData.simpleActions);
     return true;
 }
 
@@ -664,7 +656,6 @@ async function readPatterns() {
     var c = 0;
     patternListElement.innerHTML = "";
     while (c >= 0) {
-        console.log(c);
         await patternListRef.writeValue(encoder.encode(c));
         var value = await patternListRef.readValue();
         value = decoder.decode(value);
@@ -688,7 +679,6 @@ async function initPatternSetting(element, uuid) {
         let characteristicRef = await serviceRef.getCharacteristic(uuid);
         console.log("Characteristic " + decodeHex(uuid) + " connected.")
         if (characteristicRef.properties.notify) {
-            console.log("notification?");
             await characteristicRef.startNotifications().then(
                 function() {
                     characteristicRef.addEventListener('characteristicvaluechanged', (event) => {
@@ -766,10 +756,10 @@ async function connectFunscript() {
 
 async function connectStrokeEngine() {
     await handleConnect();
-    await initStrokeEngine();
     await initSetting(document.getElementById('speed'),SPEED_UUID);
     await initSetting(document.getElementById('maxDepth'), MAXDEP_UUID);
     await initSetting(document.getElementById('minDepth'), MINDEP_UUID);
     await initSetting(document.getElementById('sensation'), SENSAT_UUID);
+    await initStrokeEngine();
     await initPatternSetting(patternListElement, SENPAT_UUID);
 }
