@@ -3,6 +3,7 @@
 #include "Strings.h"
 #include "constants/Pins.h"
 #include "services/board.h"
+#include "ossm/state/ble.h"
 #include "ossm/state/settings.h"
 #include "ossm/state/state.h"
 #include "services/display.h"
@@ -35,10 +36,21 @@ static void drawPatternControlsTask(void *pvParameters) {
 
     while (isInCorrectState()) {
         nextPattern = StrokePatterns(encoder.readEncoder() / 3);
-        settings.speedKnob = getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
-        if (settings.speedKnob != settings.speed) {
+        float nextspeedKnob = getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
+        
+        if (abs(nextspeedKnob - settings.speedKnob) > 1.0 && nextspeedKnob <= settings.speed ) {
+            resetLastSpeedCommandWasFromBLE();
+        }
+
+        float nextspeed = nextspeedKnob;
+        settings.speedKnob = nextspeedKnob;
+        if (settings.speedBLE > 0.0 && wasLastSpeedCommandFromBLE()) {
+            nextspeed = settings.speedBLE;
+        }
+
+        if (nextspeed != settings.speed) {
             shouldUpdateDisplay = true;
-            settings.speed = settings.speedKnob;
+            settings.speed = nextspeed;
         }
 
         shouldUpdateDisplay = shouldUpdateDisplay || settings.pattern != nextPattern;

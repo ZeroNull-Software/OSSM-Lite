@@ -145,19 +145,6 @@ class StrokeEngine {
     /**************************************************************************/
     ServoState getState();
 
-    /**************************************************************************/
-    /*!
-      @brief  Register a callback function that will update telemetry
-      information about StrokeEngine. The provided function will be called
-      whenever a motion is executed by a manual command or by a pattern. The
-      returned values are the target position of this move, its top speed and
-      wether clipping occurred.
-      @param callbackTelemetry Function must be of type:
-      void callbackTelemetry(float position, float speed, bool clipping)
-    */
-    /**************************************************************************/
-    void registerTelemetryCallback(void (*callbackTelemetry)(float, float, bool));
-
   protected:
     ServoState _state = UNDEFINED;
     machineProperties *_machine;
@@ -182,6 +169,4 @@ class StrokeEngine {
     TaskHandle_t _taskStrokingHandle = NULL;
     SemaphoreHandle_t _patternMutex = xSemaphoreCreateMutex();
     void _applyMotionProfile(motionParameter *motion);
-    void (*_callBackHomeing)(bool) = NULL;
-    void (*_callbackTelemetry)(float, float, bool) = NULL;
 };

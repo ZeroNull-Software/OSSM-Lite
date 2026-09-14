@@ -14,47 +14,28 @@
   <main style="max-width: 800px;">
     <hgroup>
       <h2>OSSM Lite</h2>
-      <p>11. Funscript Player</p>
+      <p>12. Stroke Engine Player</p>
     </hgroup>
-    <p>Select a video file, and a funscript. Set speed and depth limits. While the video is paused, min and max depth will move the OSSM to those positions. Device will not move if the speed limit is not set.</p>
-    <button id="connect" onclick="connectFunscript();">Connect to Play</button>
+    <button id="connect" onclick="connectStrokeEngine();">Connect to Play</button>
     <article id="controls" style="display: none;">
-      <video loop id="video" controls muted style="width: 100%;"
-              onplay="playStream()" onpause="pauseStream()" onseeked="seekStream()">
-      </video>
-      <progress id="progress" value="0" max="100"></progress>
-      <fieldset style="text-align: center;"">
-        <label type="button" style="display: inline;">
-          <input type="file" accept="video/*,.m4b" onChange=loadVideo(this) style="display: none;"/>
-          Load Video
-        </label>
-        <label type="button" style="display: inline;">
-          <input type="file" accept=".funscript,.csv" onChange=loadFunscript(this) style="display: none;"/>
-          Load Funscript
-        </label>
-      </fieldset>
-      <label for="speed">Max Speed</label>
+      <label for="speed">Speed</label>
       <input type="range" min="0" max="100" value="0" id="speed">
       <label for="maxDepth">Max Depth</label>
       <input type="range" min="0" max="100" value="0" id="maxDepth">
       <label for="minDepth">Min Depth</label>
       <input type="range" min="0" max="100" value="0" id="minDepth">
-      <fieldset>
-        <label for="reverse">Reverse Script</label>
-        <input type="checkbox" id="reverse" role="switch">
-      </fieldset>
-      <fieldset>
-        <label for="simplify">Simplify Script</label>
-        <input type="checkbox" id="simplify" role="switch">
-      </fieldset>
+      <label for="minDepth">Sensation</label>
+      <input type="range" min="0" max="100" value="0" id="sensation">
+      <label for="patternList">Pattern</label>
+      <select id="patternList"></select>
+      <p id="patternDescription"></p>
     </article>
     <p></p>
     <p>
       <strong>Requirements:</strong> Chrome, Edge, or Opera on desktop or Android.
     </p>
-    <a href="preset.html">Previous</a> |
-    <a href="index.html">Home</a> |
-    <a href="strokeengine.html">Next</a>
+    <a href="funscript.html">Previous</a> |
+    <a href="index.html">Home</a>
     <dialog id="oldFirmware">
       <article>
         <header>

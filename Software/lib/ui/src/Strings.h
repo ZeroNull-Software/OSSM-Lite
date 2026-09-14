@@ -113,18 +113,22 @@ namespace ui {
         static const char patternName1[] PROGMEM = "Teasing Pounding";
         static const char patternName2[] PROGMEM = "Robo Stroke";
         static const char patternName3[] PROGMEM = "Half'n'Half";
-        static const char patternName4[] PROGMEM = "Deeper";
-        static const char patternName5[] PROGMEM = "Stop'n'Go";
-        static const char patternName6[] PROGMEM = "Insist";
-        static const char patternName7[] PROGMEM = "Progressive Stroke";
-        static const char patternName8[] PROGMEM = "Random Stroke";
-        static const char patternName9[] PROGMEM = "Go to Point";
+        static const char patternName4[] PROGMEM = "Half'n'Out";
+        static const char patternName5[] PROGMEM = "Deeper";
+        static const char patternName6[] PROGMEM = "Stop'n'Go";
+        static const char patternName7[] PROGMEM = "Insist";
+        static const char patternName8[] PROGMEM = "Progressive Stroke";
+        static const char patternName9[] PROGMEM = "Knot Stroke";
+        static const char patternName10[] PROGMEM = "Slap Stroke";
+        static const char patternName11[] PROGMEM = "Random Stroke";
+        static const char patternName12[] PROGMEM = "Go to Point";
 
-        static const char* const strokeEngineNames[10] = {
+        static const char* const strokeEngineNames[13] = {
                 patternName0, patternName1, patternName2,
                 patternName3, patternName4, patternName5,
                 patternName6, patternName7, patternName8,
-                patternName9,
+                patternName9, patternName10,patternName11,
+                patternName12,
         };
 
         // ============================================================
@@ -140,23 +144,30 @@ namespace ui {
         static const char patternDesc3[] PROGMEM =
             "Full and half depth strokes alternate; sensation affects speed.";
         static const char patternDesc4[] PROGMEM =
-            "Stroke depth increases per cycle; sensation sets count.";
+            "Full and half depth strokes alternate on pull out; sensation affects speed.";
         static const char patternDesc5[] PROGMEM =
-            "Pauses between strokes; sensation adjusts length.";
+            "Stroke depth increases per cycle; sensation sets count.";
         static const char patternDesc6[] PROGMEM =
-            "Stroke length decreaes per cycle to set depth; sensation sets count.";
+            "Pauses between strokes; sensation adjusts length.";
         static const char patternDesc7[] PROGMEM =
-            "Strokes are made of substrokes controlled by sensation.";
+            "Stroke length decreaes per cycle to set depth; sensation sets count.";
         static const char patternDesc8[] PROGMEM =
-            "Random Stroke. Sensation controls maximum randomness from current location.";
+            "Strokes are made of substrokes controlled by sensation.";
         static const char patternDesc9[] PROGMEM =
+            "Splits stroke into three parts by sensation.";
+        static const char patternDesc10[] PROGMEM =
+            "Slapping style stroke with a delay determined by sensation.";
+        static const char patternDesc11[] PROGMEM =
+            "Random Stroke. Sensation controls maximum randomness from current location.";
+        static const char patternDesc12[] PROGMEM =
             "Moves to a point between depth and stroke based on sensation.";
 
-        static const char* const strokeEngineDescriptions[10] = {
+        static const char* const strokeEngineDescriptions[13] = {
                 patternDesc0, patternDesc1, patternDesc2,
                 patternDesc3, patternDesc4, patternDesc5,
                 patternDesc6, patternDesc7, patternDesc8,
-                patternDesc9,
+                patternDesc9, patternDesc10,patternDesc11,
+                patternDesc12,
         };
 
     }  // namespace strings

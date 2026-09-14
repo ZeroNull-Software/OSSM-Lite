@@ -60,8 +60,6 @@ class FTSCallbacks : public NimBLECharacteristicCallbacks {
 inline NimBLECharacteristic* initFleshyCharacteristic(NimBLEService* pService) {
     NimBLECharacteristic* pChar = pService->createCharacteristic(NimBLEUUID(FLESHY_COMMAND_UUID),
                     NIMBLE_PROPERTY::READ | NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::NOTIFY | NIMBLE_PROPERTY::INDICATE | NIMBLE_PROPERTY::WRITE_NR);
-    NimBLEDescriptor* pDesc = pChar->createDescriptor("2901", NIMBLE_PROPERTY::READ);
-    pDesc->setValue("Fleshy thrust sync commands");
     pChar->setCallbacks(&ftsCallbacks);
     return pChar;
 }
