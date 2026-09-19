@@ -13,4 +13,5 @@ namespace Tasks {
     TaskHandle_t runStreamingTaskH = nullptr;
     TaskHandle_t runStrokeEngineTaskH = nullptr;
     TaskHandle_t runStrokeHaltTaskH = nullptr;
+    TaskHandle_t runUserCalibrationTaskH = nullptr;
 }

@@ -3,6 +3,7 @@
 #include "constants/Pins.h"
 #include "ossm/homing/homing.h"
 #include "ossm/state/menu.h"
+#include "ossm/state/settings.h"
 #include "utils/analog.h"
 
 bool ossmIsStrokeTooShort() { return homing::isStrokeTooShort(); }
@@ -16,3 +17,5 @@ bool ossmIsPreflightSafe() {
 }
 
 Menu ossmGetMenuOption() { return menuState.currentOption; }
+
+bool ossmIsCalibrationOption() { return settings.pattern == StrokePatterns::Calibration; }

@@ -12,6 +12,8 @@ void ossmDrawPatternControls();
 void ossmDrawStopping();
 void ossmStartHaltAtMin();
 void ossmDrawPreflight();
+void ossmDrawUserCalibration();
+void ossmConfirmUserCalibration();
 void ossmResetSettingsStrokeEngine();
 void ossmResetSettingsStreaming();
 void ossmAdvancedClick();
@@ -53,6 +55,10 @@ namespace actions {
     constexpr auto startHaltAtMin = []() { ossmStartHaltAtMin(); };
 
     constexpr auto drawPreflight = []() { ossmDrawPreflight(); };
+
+    constexpr auto drawUserCalibration = []() { ossmDrawUserCalibration(); };
+
+    constexpr auto confirmUserCalibration = []() { ossmConfirmUserCalibration(); };
 
     constexpr auto resetSettingsStrokeEngine = []() {
         ossmResetSettingsStrokeEngine();

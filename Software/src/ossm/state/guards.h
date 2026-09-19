@@ -11,6 +11,7 @@ bool ossmIsStrokeTooShort();
 bool ossmIsNotHomed();
 bool ossmIsPreflightSafe();
 Menu ossmGetMenuOption();
+bool ossmIsCalibrationOption();
 
 namespace guards {
 
@@ -22,6 +23,10 @@ namespace guards {
     constexpr auto isOption = [](Menu option) {
         return [option]() { return ossmGetMenuOption() == option; };
     };
+
+    // Guard for routing the "User Calibration" pattern-menu option into the
+    // usercalibration state.
+    constexpr auto isCalibrationOption = []() { return ossmIsCalibrationOption(); };
 
     // Guard for checking if preflight is safe
     constexpr auto isPreflightSafe = []() { return ossmIsPreflightSafe(); };

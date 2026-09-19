@@ -18,6 +18,7 @@ namespace Tasks {
     extern TaskHandle_t runStreamingTaskH;
     extern TaskHandle_t runStrokeEngineTaskH;
     extern TaskHandle_t runStrokeHaltTaskH;
+    extern TaskHandle_t runUserCalibrationTaskH;
 
     // Constants can stay in the header
     constexpr int stepperCore = 1;

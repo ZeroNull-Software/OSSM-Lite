@@ -30,6 +30,7 @@ enum class StrokePatterns {
     Slap,
     RandomStroke,
     PointStroke,
+    Calibration,
     //Add additional strokes here
     Count
 };
