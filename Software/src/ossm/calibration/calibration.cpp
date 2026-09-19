@@ -34,6 +34,10 @@ namespace {
     int32_t calibrationSpeedSteps = 0;
     int32_t calibrationAccelSteps = 0;
 
+    // The last target position commanded to the stepper while jogging
+    // SetMin/SetMax.
+    int32_t jogTargetSteps = 0;
+
     int32_t pctToSteps(float pct) {
         return (int32_t)round(0.01f * pct * (float)calibration.measuredStrokeSteps);
     }
@@ -84,19 +88,32 @@ namespace {
         return false;
     }
 
-    // Jog: follow the knob at calibration speed until `onConfirm()` advances the
-    // phase or the state changes. When clampToMin is set the target never goes
+    // Jog: move the machine to the knob's position one detent at a time, at
+    // the calibration speed. Each accepted detent commands a single
+    // point-to-point move that decelerates to a stop and holds, so the knob
+    // value is the commanded point rather than a continuously followed
+    // position. While a move is in flight, further detents are not applied
+    // until the move completes (one move per detent, in order), so noisy
+    // encoder edges can never re-target a running move and stall or reverse
+    // the motor mid-travel. When clampToMin is set the target never goes
     // below the stored min position.
     void jogUntilConfirm(Phase activePhase, bool clampToMin) {
         int32_t minSteps = clampToMin ? pctToSteps(settings.minPosition) : 0;
         int32_t maxSteps = (int32_t)calibration.measuredStrokeSteps;
-        int32_t lastTarget = stepper->getCurrentPosition();
+
+        // Start from the knob's current value and the machine's current
+        // position so the first move is triggered by an actual detent.
+        int lastAccepted = (int)encoder.readEncoder();
+        jogTargetSteps = stepper->getCurrentPosition();
 
         while (stateMachine->is("usercalibration"_s) && phase == activePhase) {
-            int32_t target = pctToSteps(encoder.readEncoder());
-            target = constrain(target, minSteps, maxSteps);
-            if (target != lastTarget) {
-                lastTarget = target;
+            int current = (int)encoder.readEncoder();
+            // Only accept a new target while at rest; step the accepted value
+            // one detent at a time so every detent gets its own move.
+            if (current != lastAccepted && !stepper->isRunning()) {
+                lastAccepted += (current > lastAccepted) ? 1 : -1;
+                int32_t target = constrain(pctToSteps(lastAccepted), minSteps, maxSteps);
+                jogTargetSteps = target;
                 applyCalibrationProfile();
                 stepper->moveTo(target, false);
             }
