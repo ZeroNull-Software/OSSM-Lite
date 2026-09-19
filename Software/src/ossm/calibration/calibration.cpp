@@ -88,6 +88,30 @@ namespace {
         return false;
     }
 
+    // Redraw the jog prompt showing the current target position.
+    void drawJogPrompt(Phase activePhase) {
+        if (!isDisplayAvailable()) {
+            return;
+        }
+        char valueText[16];
+        snprintf(valueText, sizeof(valueText), "%s: %d%%",
+                 activePhase == Phase::SetMin ? "Min" : "Max",
+                 (int)stepsToPct(jogTargetSteps));
+        if (xSemaphoreTake(displayMutex, 100) == pdTRUE) {
+            ui::TextPage page;
+            page.title = "Calibration";
+            page.subtitle = valueText;
+            page.body = activePhase == Phase::SetMin
+                            ? "Set the min depth and click"
+                            : "Set the max depth and click";
+            page.bottomText = "Long press to cancel";
+            page.centerBody = true;
+            ui::drawTextPage(display.getU8g2(), page);
+            refreshPage(true, true);
+            xSemaphoreGive(displayMutex);
+        }
+    }
+
     // Jog: move the machine to the knob's position one detent at a time, at
     // the calibration speed. Each accepted detent commands a single
     // point-to-point move that decelerates to a stop and holds, so the knob
@@ -105,6 +129,7 @@ namespace {
         // position so the first move is triggered by an actual detent.
         int lastAccepted = (int)encoder.readEncoder();
         jogTargetSteps = stepper->getCurrentPosition();
+        drawJogPrompt(activePhase);
 
         while (stateMachine->is("usercalibration"_s) && phase == activePhase) {
             int current = (int)encoder.readEncoder();
@@ -113,9 +138,12 @@ namespace {
             if (current != lastAccepted && !stepper->isRunning()) {
                 lastAccepted += (current > lastAccepted) ? 1 : -1;
                 int32_t target = constrain(pctToSteps(lastAccepted), minSteps, maxSteps);
-                jogTargetSteps = target;
-                applyCalibrationProfile();
-                stepper->moveTo(target, false);
+                if (target != jogTargetSteps) {
+                    jogTargetSteps = target;
+                    applyCalibrationProfile();
+                    stepper->moveTo(target, false);
+                    drawJogPrompt(activePhase);
+                }
             }
             vTaskDelay(20);
         }
@@ -175,7 +203,6 @@ void drawUserCalibration() {
             // 2. Set the min depth.
             phase = Phase::SetMin;
             encoder.setEncoderValue((int)round(settings.minPosition));
-            drawPrompt("Calibration", "Set the min depth and click", "Long press to cancel");
             jogUntilConfirm(Phase::SetMin, /*clampToMin=*/false);
             if (!stateMachine->is("usercalibration"_s)) {
                 stepper->stopMove();
@@ -185,7 +212,6 @@ void drawUserCalibration() {
             // 3. Set the max depth (never below the new min).
             phase = Phase::SetMax;
             encoder.setEncoderValue((int)round(settings.maxPosition));
-            drawPrompt("Calibration", "Set the max depth and click", "Long press to cancel");
             jogUntilConfirm(Phase::SetMax, /*clampToMin=*/true);
             if (!stateMachine->is("usercalibration"_s)) {
                 stepper->stopMove();
