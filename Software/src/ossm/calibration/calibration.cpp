@@ -124,14 +124,18 @@ namespace {
 }  // namespace
 
 void onConfirm() {
+    // Store the commanded target (jogTargetSteps) rather than the transient
+    // position. If the user clicks while the motor is still moving toward
+    // the last detent, the machine will arrive at exactly that position, so
+    // the stored value is deterministic and matches the knob's reading.
     switch (phase) {
         case Phase::SetMin:
             settings.minPosition =
-                constrain(stepsToPct(stepper->getCurrentPosition()), 0.0f, 99.0f);
+                constrain(stepsToPct(jogTargetSteps), 0.0f, 99.0f);
             phase = Phase::SetMax;
             break;
         case Phase::SetMax: {
-            float maxPct = stepsToPct(stepper->getCurrentPosition());
+            float maxPct = stepsToPct(jogTargetSteps);
             settings.maxPosition = constrain(maxPct, settings.minPosition, 100.0f);
             phase = Phase::ReturnMin;
             break;
