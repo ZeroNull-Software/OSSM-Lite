@@ -23,6 +23,16 @@ void drawUserCalibration();
  */
 void onConfirm();
 
+/**
+ * Cancel handler for the long-press during calibration.
+ *
+ * Safe to call from the button task: it only flags the calibration task and
+ * restores a coherent min/max range. The task itself brings the motor to rest
+ * and hands the stepper back to the stroke engine, so the motor is never
+ * driven by two owners at once.
+ */
+void onCancel();
+
 }  // namespace user_calibration
 
 #endif  // OSSM_USER_CALIBRATION_CALIBRATION_H
