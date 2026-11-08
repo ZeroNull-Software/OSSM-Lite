@@ -40,9 +40,11 @@ namespace homing {
         stepper->enableOutputs();
         stepper->setDirectionPin(Pins::Driver::motorDirectionPin, UserConfig::getDirection());
 
-        bool isDouble = UserConfig::getHomingType() == UserConfig::HomingType::DoubleTap;
-        bool isNone = UserConfig::getHomingType() == UserConfig::HomingType::None;
-        bool isSingle = UserConfig::getHomingType() == UserConfig::HomingType::SingleSided;
+        UserConfig::HomingType homingType = UserConfig::getHomingType();
+
+        bool isDouble = homingType == UserConfig::HomingType::DoubleTap;
+        bool isNone = homingType == UserConfig::HomingType::None;
+        bool isSingle = homingType == UserConfig::HomingType::SingleSided;
         int limitSwitchTriggerCount = 0; // Number of time the limit switch has been read as 'closed'
 
         if (isNone && calibration.isFirstHomed) {
