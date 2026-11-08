@@ -7,6 +7,7 @@
 #include "ossm/state/calibration.h"
 #include "ossm/state/settings.h"
 #include "ossm/state/state.h"
+#include "ossm/stroke_engine/stroke_engine.h"
 #include "services/display.h"
 #include "services/encoder.h"
 #include "services/stepper.h"
@@ -25,6 +26,12 @@ namespace {
     enum class Phase { Starting, SetMin, SetMax, ReturnMin, Done };
 
     Phase phase = Phase::Starting;
+
+    // Set by the state machine when the user long-presses to cancel. The
+    // calibration task owns the stepper for as long as we are in this state,
+    // so the button task must only signal - it must never touch the motor
+    // directly. See finishAndHandOff().
+    volatile bool cancelRequested = false;
 
     // Calibration motion limits, in mm (converted to steps at task start).
     constexpr float kCalibrationSpeedPercent = 10.0f;  // 10% of max speed
@@ -68,6 +75,37 @@ namespace {
             vTaskDelay(10);
         }
         return true;
+    }
+
+    // Guarantee a coherent, non-degenerate stroke range no matter which phase
+    // we were interrupted in. If the min was confirmed but the max was not,
+    // maxPosition still holds the stale pre-calibration value and can be below
+    // the new min, which would hand the stroke engine a negative stroke.
+    void sanitiseRange() {
+        settings.minPosition = constrain(settings.minPosition, 0.0f, 99.0f);
+        settings.maxPosition =
+            constrain(settings.maxPosition, settings.minPosition + 1.0f, 100.0f);
+        settings.stroke = settings.maxPosition - settings.minPosition;
+    }
+
+    // Ordered teardown for every exit path that does not emit Done: bring the
+    // rail to rest, make the range safe, then hand the stepper back to the
+    // stroke engine. Always runs on the calibration task so the motor has
+    // exactly one owner at any instant - the button task must not stop or
+    // restart anything while this task may still be commanding moves.
+    void finishAndHandOff() {
+        stepper->stopMove();
+        while (stepper->isRunning()) {
+            vTaskDelay(10);
+        }
+        sanitiseRange();
+        // Only restart the engine if we actually landed in the pattern menu; a
+        // second long-press may have taken us back to the main menu.
+        if (stateMachine->is("strokeEngine.pattern"_s)) {
+            stroke_engine::startStrokeEngine();
+        }
+        Tasks::runUserCalibrationTaskH = nullptr;
+        vTaskDelete(nullptr);
     }
 
     bool drawPrompt(const char *title, const char *body, const char *bottom) {
@@ -135,7 +173,8 @@ namespace {
             int current = (int)encoder.readEncoder();
             // Only accept a new target while at rest; step the accepted value
             // one detent at a time so every detent gets its own move.
-            if (current != lastAccepted && !stepper->isRunning()) {
+            if (current != lastAccepted && !stepper->isRunning() &&
+                !cancelRequested) {
                 lastAccepted += (current > lastAccepted) ? 1 : -1;
                 int32_t target = constrain(pctToSteps(lastAccepted), minSteps, maxSteps);
                 if (target != jogTargetSteps) {
@@ -152,6 +191,9 @@ namespace {
 }  // namespace
 
 void onConfirm() {
+    if (cancelRequested) {
+        return;
+    }
     // Store the commanded target (jogTargetSteps) rather than the transient
     // position. If the user clicks while the motor is still moving toward
     // the last detent, the machine will arrive at exactly that position, so
@@ -160,17 +202,38 @@ void onConfirm() {
         case Phase::SetMin:
             settings.minPosition =
                 constrain(stepsToPct(jogTargetSteps), 0.0f, 99.0f);
+            // Collapse the range to min+1 until the real max is set. Mirrors
+            // the invariant play_controls and the BLE depth handlers maintain.
+            // Without this the knob is preloaded with the stale max and the
+            // first detent of the SetMax jog commands a full traverse to it.
+            settings.maxPosition =
+                constrain(settings.minPosition + 1.0f, 0.0f, 100.0f);
+            settings.stroke = settings.maxPosition - settings.minPosition;
             phase = Phase::SetMax;
             break;
         case Phase::SetMax: {
             float maxPct = stepsToPct(jogTargetSteps);
-            settings.maxPosition = constrain(maxPct, settings.minPosition, 100.0f);
+            // Lower bound is min+1, not min: confirming at the min itself
+            // would record a zero-length stroke.
+            settings.maxPosition =
+                constrain(maxPct, settings.minPosition + 1.0f, 100.0f);
+            settings.stroke = settings.maxPosition - settings.minPosition;
             phase = Phase::ReturnMin;
             break;
         }
         default:
             break;
     }
+}
+
+void onCancel() {
+    // Runs on the button task, which has a small stack and must not block:
+    // flag the calibration task and make the range safe immediately, so any
+    // observer (pattern menu, BLE, stroke engine) sees coherent values even
+    // before the task has wound the motor down. The task performs the ordered
+    // stop and hand-off in finishAndHandOff().
+    cancelRequested = true;
+    sanitiseRange();
 }
 
 void drawUserCalibration() {
@@ -191,13 +254,13 @@ void drawUserCalibration() {
             showHeaderIcons = true;
 
             // 1. Move to the current min position at calibration speed.
+            cancelRequested = false;
             phase = Phase::Starting;
             applyCalibrationProfile();
             drawPrompt("Calibration", "Starting Calibration...", nullptr);
             stepper->moveTo(pctToSteps(settings.minPosition), false);
             if (!waitUntilStopped()) {
-                stepper->stopMove();
-                vTaskDelete(nullptr);
+                finishAndHandOff();
             }
 
             // 2. Set the min depth.
@@ -205,8 +268,7 @@ void drawUserCalibration() {
             encoder.setEncoderValue((int)round(settings.minPosition));
             jogUntilConfirm(Phase::SetMin, /*clampToMin=*/false);
             if (!stateMachine->is("usercalibration"_s)) {
-                stepper->stopMove();
-                vTaskDelete(nullptr);
+                finishAndHandOff();
             }
 
             // 3. Set the max depth (never below the new min).
@@ -214,8 +276,7 @@ void drawUserCalibration() {
             encoder.setEncoderValue((int)round(settings.maxPosition));
             jogUntilConfirm(Phase::SetMax, /*clampToMin=*/true);
             if (!stateMachine->is("usercalibration"_s)) {
-                stepper->stopMove();
-                vTaskDelete(nullptr);
+                finishAndHandOff();
             }
 
             // 4. Ease back to the min position so the next pattern starts there.
@@ -225,10 +286,15 @@ void drawUserCalibration() {
             stepper->moveTo(pctToSteps(settings.minPosition), false);
             if (waitUntilStopped()) {
                 phase = Phase::Done;
+                // The Done transition restarts the stroke engine itself, so
+                // this path must not hand off as well - that would spawn a
+                // second engine task.
                 stateMachine->process_event(Done{});
+                vTaskDelete(nullptr);
             }
 
-            vTaskDelete(nullptr);
+            // Left the state during the return move: tear down safely.
+            finishAndHandOff();
         },
         "userCalibrationTask", stackSize, nullptr, configMAX_PRIORITIES - 1,
         &Tasks::runUserCalibrationTaskH, Tasks::operationTaskCore);

@@ -14,6 +14,7 @@ void ossmStartHaltAtMin();
 void ossmDrawPreflight();
 void ossmDrawUserCalibration();
 void ossmConfirmUserCalibration();
+void ossmCancelUserCalibration();
 void ossmResetSettingsStrokeEngine();
 void ossmResetSettingsStreaming();
 void ossmAdvancedClick();
@@ -59,6 +60,11 @@ namespace actions {
     constexpr auto drawUserCalibration = []() { ossmDrawUserCalibration(); };
 
     constexpr auto confirmUserCalibration = []() { ossmConfirmUserCalibration(); };
+
+    // Cancel only signals the calibration task, which owns the stepper and
+    // performs the ordered stop + hand-off. That keeps this cheap enough for
+    // the button task's small stack.
+    constexpr auto cancelUserCalibration = []() { ossmCancelUserCalibration(); };
 
     constexpr auto resetSettingsStrokeEngine = []() {
         ossmResetSettingsStrokeEngine();

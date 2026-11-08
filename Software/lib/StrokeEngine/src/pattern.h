@@ -859,6 +859,25 @@ class PointStroke : public Pattern {
     }
 };
 
+/**************************************************************************/
+/*!
+  @brief  "Stroke Calibration" is a menu entry point, not a motion pattern.
+          It always skips, so the engine can never drive the rail while it is
+          selected - whatever the speed dial or a BLE client does. Note that
+          skip must be set explicitly: the base _nextMove defaults to
+          {0, 0, 0, false} and _applyMotionProfile() would clamp that to a
+          speed of 1 and a position of 0, driving the rail to zero.
+*/
+/**************************************************************************/
+class Calibration : public Pattern {
+  public:
+    motionParameter nextTarget(unsigned int index) {
+        _nextMove.skip = true;
+        _index = index;
+        return _nextMove;
+    }
+};
+
 inline Pattern* Pattern::Create(StrokePatterns pattern){
     switch(pattern){
         case StrokePatterns::TeasingPounding:
@@ -885,6 +904,8 @@ inline Pattern* Pattern::Create(StrokePatterns pattern){
             return new RandomStroke();
         case StrokePatterns::PointStroke:
             return new PointStroke();
+        case StrokePatterns::Calibration:
+            return new Calibration();
         default:
             return new SimpleStroke();
     }

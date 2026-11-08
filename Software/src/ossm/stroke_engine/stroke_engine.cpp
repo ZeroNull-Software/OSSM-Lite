@@ -31,6 +31,12 @@ namespace stroke_engine {
         return oldPct != newPct && (abs(newPct - oldPct) > 0.5 || newPct == 0.0 || newPct == 100.0);
     }
 
+    // Patterns that are UI entry points rather than motion profiles. They must
+    // never start the rail.
+    static bool isPseudoPattern() {
+        return settings.pattern == StrokePatterns::Calibration;
+    }
+
     static float calculateSensation(float sensationPercentage) {
         return float((sensationPercentage * 200.0) / 100.0) - 100.0f;
     }
@@ -69,8 +75,13 @@ namespace stroke_engine {
                 Stroker.setSpeed(speed, true);
                 lastSetting.speed = settings.speed;
 
-                // Speed is float, so give a little wiggle room here to assume 0
-                if (settings.speed < 0.1f) {
+                // Speed is float, so give a little wiggle room here to assume 0.
+                // A pseudo-pattern is held stopped as well, which also absorbs
+                // the stale-vs-dial delta seen when returning from calibration:
+                // nothing samples the speed pot in that state, so
+                // settings.speed is frozen there and the first reading after we
+                // restart would otherwise look like a deliberate change.
+                if (settings.speed < 0.1f || isPseudoPattern()) {
                     Stroker.stopMotion();
                 } else if (Stroker.getState() == READY) {
                     Stroker.startPattern();
@@ -100,6 +111,12 @@ namespace stroke_engine {
             if (lastSetting.pattern != settings.pattern) {
                 ESP_LOGD("UTILS", "change pattern: %d", settings.pattern);
                 Stroker.setPattern(settings.pattern, false);
+                if (isPseudoPattern()) {
+                    // setPattern() above is applyNow=false, so the new pattern
+                    // would only take effect once the current stroke finished.
+                    // Halt promptly instead.
+                    Stroker.stopMotion();
+                }
                 lastSetting.pattern = settings.pattern;
             }
             vTaskDelay(100);

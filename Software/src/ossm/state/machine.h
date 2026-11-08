@@ -98,7 +98,12 @@ struct OSSMStateMachine {
 
             "usercalibration"_s + buttonPress / confirmUserCalibration = "usercalibration"_s,
             "usercalibration"_s + done / (drawPatternControls, startStrokeEngine) = "strokeEngine.pattern"_s,
-            "usercalibration"_s + longPress / (emergencyStop, drawPatternControls, startStrokeEngine) = "strokeEngine.pattern"_s,
+            // Cancel only signals: the calibration task brings the rail to rest
+            // and restarts the stroke engine itself once the motor has stopped.
+            // Stopping or restarting from here would race that task for the
+            // stepper, and emergencyStop would also mark the machine not-homed
+            // while it is still tracking a valid position.
+            "usercalibration"_s + longPress / (cancelUserCalibration, drawPatternControls) = "strokeEngine.pattern"_s,
 
             "streaming"_s [isNotHomed] = "homing"_s,
             "streaming"_s [isPreflightSafe] / (resetSettingsStreaming, drawPlayControls, startStreaming) = "streaming.idle"_s,

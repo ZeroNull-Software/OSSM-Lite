@@ -64,6 +64,10 @@ void ossmConfirmUserCalibration() {
     user_calibration::onConfirm();
 }
 
+void ossmCancelUserCalibration() {
+    user_calibration::onCancel();
+}
+
 void ossmResetSettingsStrokeEngine() {
     settings.speed = 0;
     settings.speedBLE = 0;
