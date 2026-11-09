@@ -19,11 +19,51 @@ namespace UserConfig {
 
     const char* pref = "UserConfig";
     const char* tag = "USER CONFIG";
+    // NOTE: NVS keys are limited to 15 characters, hence the abbreviation.
+    const char* prefsInitializedKey = "is_prefs_init";
+
+    /**
+     * Writes every built-in default (UserConfig::defaults) to the
+     * preferences namespace. The handle must already be open read/write.
+     * Keys must stay in sync with the getters/setters below.
+     */
+    static void writeDefaultConfig() {
+        userConfig.putFloat("SpeedCurve", defaults::speedCurve);
+        userConfig.putFloat("SensorLimit", defaults::sensorLimit);
+        userConfig.putString("DeviceName", defaults::deviceName);
+        userConfig.putBool("Direction", defaults::direction);
+        userConfig.putBool("ReHome", defaults::reHome);
+        userConfig.putInt("HomingType", defaults::homingType);
+        userConfig.putFloat("RailLength", defaults::railLength);
+        userConfig.putFloat("MaxAcceleration", defaults::maxAcceleration);
+        userConfig.putFloat("MaxRPM", defaults::maxRPM);
+        userConfig.putFloat("MotorSteps", defaults::motorSteps);
+        userConfig.putFloat("PulleyTeeth", defaults::pulleyTeeth);
+        userConfig.putFloat("BeltPitch", defaults::beltPitch);
+        userConfig.putFloat("HomingSpeed", defaults::homingSpeed);
+        ESP_LOGI(tag, "Default configuration written to NVS");
+    }
 
     void initUserConfig() {
         userConfig.begin(pref);
         ESP_LOGI(tag, "Initializing Preferences");
+
+        // First boot (or after a factory reset): the flag is missing, so
+        // persist the defaults before anything reads them back.
+        if (!userConfig.getBool(prefsInitializedKey, false)) {
+            ESP_LOGI(tag, "Preferences not initialized, writing defaults");
+            writeDefaultConfig();
+            userConfig.putBool(prefsInitializedKey, true);
+        }
+
         userConfig.end();
+    }
+
+    void factoryReset() {
+        userConfig.begin(pref, false);
+        userConfig.clear();
+        userConfig.end();
+        ESP_LOGW(tag, "Factory reset: UserConfig NVS namespace cleared");
     }
 
     float readNVSFloat(const char* key, float def) {
@@ -56,7 +96,7 @@ namespace UserConfig {
 
     float getSpeedCurve() {
         if (speedCurve < 0) {
-            speedCurve = readNVSFloat("SpeedCurve", 0.8);
+            speedCurve = readNVSFloat("SpeedCurve", defaults::speedCurve);
         }
         return speedCurve;
     }
@@ -68,7 +108,7 @@ namespace UserConfig {
 
     float getSensorLimit() {
         if (sensorLimit < 0) {
-            sensorLimit = readNVSFloat("SensorLimit", 2.5);
+            sensorLimit = readNVSFloat("SensorLimit", defaults::sensorLimit);
         }
         return sensorLimit;
     }
@@ -81,7 +121,7 @@ namespace UserConfig {
     std::string getDeviceName() {
         if (deviceName.empty()) {
             userConfig.begin(pref, true);
-            deviceName = userConfig.getString("DeviceName","OSSM").c_str();
+            deviceName = userConfig.getString("DeviceName", defaults::deviceName).c_str();
             userConfig.end();
             ESP_LOGD("USER CONFIG", "Name read: %s", deviceName.c_str());
         }
@@ -96,7 +136,7 @@ namespace UserConfig {
     }
 
     bool getDirection() {
-        return readNVSBool("Direction", true);
+        return readNVSBool("Direction", defaults::direction);
     }
     void setDirection(bool value) {
         writeNVSBool("Direction", value);
@@ -107,7 +147,7 @@ namespace UserConfig {
     }
 
     bool getReHome() {
-        return readNVSBool("ReHome",true);
+        return readNVSBool("ReHome", defaults::reHome);
     }
     void setReHome(bool value) {
         writeNVSBool("ReHome", value);
@@ -115,7 +155,7 @@ namespace UserConfig {
 
     HomingType getHomingType() {
         userConfig.begin(pref, true);
-        HomingType output = static_cast<HomingType>(userConfig.getInt("HomingType",1));
+        HomingType output = static_cast<HomingType>(userConfig.getInt("HomingType", defaults::homingType));
         userConfig.end();
         ESP_LOGI(tag,"Homing type read: %d", output);
         return output;
@@ -129,7 +169,7 @@ namespace UserConfig {
 
     float getRailLength() {
         if (railLength < 0) {
-            railLength = readNVSFloat("RailLength",180.0);
+            railLength = readNVSFloat("RailLength", defaults::railLength);
         }
         return railLength;
     }
@@ -141,7 +181,7 @@ namespace UserConfig {
 
     float getMaxAcceleration() {
         if (maxAcceleration < 0) {
-            maxAcceleration = readNVSFloat("MaxAcceleration",50000.0);
+            maxAcceleration = readNVSFloat("MaxAcceleration", defaults::maxAcceleration);
         }
         return maxAcceleration;
     }
@@ -152,7 +192,7 @@ namespace UserConfig {
 
     float getMotorRPM() {
         if (maxRPM < 0) {
-            maxRPM = readNVSFloat("MaxRPM",1500.0);
+            maxRPM = readNVSFloat("MaxRPM", defaults::maxRPM);
         }
         return maxRPM;
     }
@@ -164,7 +204,7 @@ namespace UserConfig {
 
     float getMotorStepsPR() {
         if (motorStepPerRevolution < 0) {
-            motorStepPerRevolution = readNVSFloat("MotorSteps", 800.0);
+            motorStepPerRevolution = readNVSFloat("MotorSteps", defaults::motorSteps);
         }
         return motorStepPerRevolution;
     }
@@ -176,7 +216,7 @@ namespace UserConfig {
 
     float getPulleyTeeth(){
         if (pulleyToothCount < 0) {
-            pulleyToothCount = readNVSFloat("PulleyTeeth",20.0);
+            pulleyToothCount = readNVSFloat("PulleyTeeth", defaults::pulleyTeeth);
         }
         return pulleyToothCount;
     }
@@ -189,7 +229,7 @@ namespace UserConfig {
 
     float getBeltPitch(){
         if (beltPitchMm < 0) {
-            beltPitchMm = readNVSFloat("BeltPitch",2.0);
+            beltPitchMm = readNVSFloat("BeltPitch", defaults::beltPitch);
         }
         return beltPitchMm;
     }
@@ -237,7 +277,7 @@ namespace UserConfig {
 
     float getHomingSpeed(){
         if (homingSpeed < 0) {
-            homingSpeed = readNVSFloat("HomingSpeed",25);
+            homingSpeed = readNVSFloat("HomingSpeed", defaults::homingSpeed);
         }
         return homingSpeed;
     }

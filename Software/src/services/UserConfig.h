@@ -6,7 +6,37 @@
 namespace UserConfig {
     enum HomingType {None, Default, SingleSided, DoubleTap};
 
+    /**
+     * Built-in defaults for every persisted setting.
+     * These are written to NVS on first boot (and after a factory reset);
+     * the getters fall back to the same values when a key is missing.
+     * Update a default here and it applies everywhere.
+     */
+    namespace defaults {
+        constexpr float speedCurve = 0.8;
+        constexpr float sensorLimit = 2.5;
+        constexpr const char* deviceName = "OSSM";
+        constexpr bool direction = true;
+        constexpr bool reHome = true;
+        constexpr int homingType = Default;
+        constexpr float railLength = 180.0;
+        constexpr float maxAcceleration = 50000.0;
+        constexpr float maxRPM = 1500.0;
+        constexpr float motorSteps = 800.0;
+        constexpr float pulleyTeeth = 20.0;
+        constexpr float beltPitch = 2.0;
+        constexpr float homingSpeed = 25.0;
+    }
+
     void initUserConfig();
+
+    /**
+     * Clears the UserConfig NVS namespace. On the next boot
+     * initUserConfig() detects the missing initialization flag and
+     * re-writes the built-in defaults. The caller is responsible for
+     * restarting the device.
+     */
+    void factoryReset();
 
     float getSpeedCurve();
     void setSpeedCurve(float value);
