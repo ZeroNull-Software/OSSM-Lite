@@ -16,7 +16,7 @@ namespace UserConfig {
         constexpr float speedCurve = 0.8;
         constexpr float sensorLimit = 2.5;
         constexpr const char* deviceName = "CYBORGTOP";
-        constexpr bool direction = true;
+        constexpr bool direction = false;
         constexpr bool reHome = true;
         constexpr int homingType = SingleSided;
         constexpr float railLength = 400.0;
