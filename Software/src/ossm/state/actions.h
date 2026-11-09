@@ -34,6 +34,7 @@ void ossmSetHomed();
 void ossmSetFirstHomed();
 void ossmSetNotHomed();
 void ossmResetWiFi();
+void ossmFactoryReset();
 void ossmRestart();
 
 namespace actions {
@@ -109,6 +110,12 @@ namespace actions {
     constexpr auto stopWifiPortal = []() {};
 
     constexpr auto resetWiFi = []() { ossmResetWiFi(); };
+
+    // Clears the persisted user configuration, shows a confirmation on
+    // the display and waits for the remote button to be released before
+    // rebooting (pages::runFactoryReset never returns). The "restart"
+    // target state is only a formality.
+    constexpr auto factoryReset = []() { ossmFactoryReset(); };
 
     constexpr auto drawError = []() { ossmDrawError(); };
 

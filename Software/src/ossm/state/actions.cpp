@@ -177,4 +177,6 @@ void ossmSetNotHomed() {
 
 void ossmResetWiFi() { wm.resetSettings(); }
 
+void ossmFactoryReset() { pages::runFactoryReset(); }
+
 void ossmRestart() { ESP.restart(); }

@@ -21,6 +21,8 @@ namespace ui {
         static const char restart[] PROGMEM = "Restart";
         static const char settings[] PROGMEM = "Settings";
         static const char skip[] PROGMEM = "Click to exit";
+        static const char resetOkReleaseToReboot[] PROGMEM =
+            "Reset ok. Release button to reboot.";
 
         // ============================================================
         // Menu items / operation modes

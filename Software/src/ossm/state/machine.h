@@ -16,7 +16,17 @@ struct OSSMStateMachine {
 
         return make_transition_table(
             // clang-format off
-            *"idle"_s + done / drawHello = "homing"_s,
+            *"idle"_s + done / drawHello = "hello"_s,
+
+            // Splash screen. When the animation completes the hello task
+            // samples the remote button: held means factory reset (clear
+            // the UserConfig NVS namespace + restart, defaults are
+            // re-written on boot); otherwise it posts done and the
+            // machine moves on to homing. The long press transition
+            // covers the case where the animation itself outlasts the
+            // OneButton long-press threshold (~800 ms).
+            "hello"_s + longPress / factoryReset = "restart"_s,
+            "hello"_s + done = "homing"_s,
 
             "homing"_s / startHoming = "homing.run"_s,
             "homing.run"_s + error = "error"_s,
