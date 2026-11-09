@@ -6,9 +6,7 @@
 #include "ossm/menu/menu.h"
 #include "ossm/pages/error.h"
 #include "ossm/pages/hello.h"
-#include "ossm/pages/help.h"
 #include "ossm/pages/preflight.h"
-#include "ossm/pages/update.h"
 #include "ossm/pages/wifi.h"
 #include "ossm/pattern_controls/pattern_controls.h"
 #include "ossm/play_controls/play_controls.h"
@@ -148,15 +146,7 @@ void ossmEmergencyStop() {
     ossmSetNotHomed();
 }
 
-void ossmDrawHelp() { pages::drawHelp(); }
-
 void ossmDrawWiFi() { pages::drawWiFi(); }
-
-void ossmDrawUpdate() { pages::drawUpdate(); }
-
-void ossmDrawNoUpdate() { pages::drawNoUpdate(); }
-
-void ossmDrawUpdating() { pages::drawUpdating(); }
 
 void ossmDrawError() { pages::drawError(); }
 

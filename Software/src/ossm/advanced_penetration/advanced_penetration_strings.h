@@ -9,7 +9,7 @@ namespace advanced_penetration {
     std::vector<std::string> presets;
     Preferences presetStore;
 
-    String readPresetValueCommand(u8_t i) {
+    String readPresetValueCommand(uint8_t i) {
         presetStore.begin("presets", true);
         String output = presetStore.getString("reset");
         if (i > 0) {
@@ -43,7 +43,7 @@ namespace advanced_penetration {
 
     void saveNames() {
         std::string names;
-        for (u8_t i = 0; i < presets.size(); i++) {
+        for (uint8_t i = 0; i < presets.size(); i++) {
             names += presets[i] + ",";
         }
         ESP_LOGI("AP", "Saving names: %s", names.c_str());
@@ -59,7 +59,7 @@ namespace advanced_penetration {
     }
 
     String generateName() {
-        u8_t i = 1;
+        uint8_t i = 1;
         String key = "User Pattern " + String(i);
         while (keyExists(key)) {
             i++;

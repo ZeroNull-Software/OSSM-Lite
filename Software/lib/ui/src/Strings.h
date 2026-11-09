@@ -33,7 +33,6 @@ namespace ui {
         static const char streaming[] PROGMEM = "Streaming";
         static const char deepThroatTrainerSync[] PROGMEM =
             "DeepThroat Sync";
-        static const char update[] PROGMEM = "Update";
         static const char wifi[] PROGMEM = "Wi-Fi";
 
         // ============================================================
@@ -71,28 +70,6 @@ namespace ui {
         static const char measuringRail[] PROGMEM = "Measuring Rail";
         static const char noDescription[] PROGMEM =
             "No description available";
-
-        // ============================================================
-        // Help page
-        // ============================================================
-        static const char helpTitle[] PROGMEM = "Get Help";
-        static const char helpBody[] PROGMEM = "On Discord,\nor GitHub";
-        static const char helpBottom[] PROGMEM = "Click to exit";
-        static const char helpQr[] PROGMEM =
-            "https://github.com/fray-d/OSSM-Lite";
-        static const char updateURL[] PROGMEM =
-            "https://fray-d.github.io/OSSM-Lite/";
-
-        // ============================================================
-        // Update pages
-        // ============================================================
-        static const char updateChecking[] PROGMEM =
-            "Checking for update...";
-        static const char noUpdateBody[] PROGMEM = "No Update Available";
-        static const char noUpdateBottom[] PROGMEM = "Click to exit";
-        static const char updatingTitle[] PROGMEM = "Updating OSSM...";
-        static const char updatingBody[] PROGMEM =
-            "Update is in progress. This may take up to 60s.";
 
         // ============================================================
         // WiFi pages

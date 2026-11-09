@@ -23,9 +23,6 @@ void OSSM::ble_click(String commandString) {
     }
 
     switch (command.command) {
-        case Commands::goToUpdate:
-            stateMachine->process_event(TryUpdate{});
-            break;
         case Commands::goToStrokeEngine:
             menuState.currentOption = Menu::StrokeEngine;
             if (stateMachine != nullptr) {

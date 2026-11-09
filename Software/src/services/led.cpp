@@ -193,8 +193,6 @@ void updateLEDForMachineStatus() {
         breatheLED(COLOR_DEEP_PURPLE, 15);
     } else if (stateMachine->is("wifi.idle"_s)) {
         breatheLED(COLOR_YELLOW, 5);
-    } else if (stateMachine->is("update.idle"_s)) {
-        breatheLED(COLOR_ORANGE, 51);
     } else {
         // Fall back to BLE status
         updateLEDForBLEStatus();

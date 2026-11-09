@@ -11,9 +11,9 @@
 
 namespace advanced_penetration {
 
-    u8_t textPosition = 19;
+    uint8_t textPosition = 19;
 
-    void selectText(u8_t index) { 
+    void selectText(uint8_t index) { 
         display.drawFrame(111, 10 + 9 * index, 17, 11);
     }
 
@@ -65,7 +65,7 @@ namespace advanced_penetration {
         }
     }
 
-    StrokeMath calculateStroke(u8_t speed, float accelValue) {
+    StrokeMath calculateStroke(uint8_t speed, float accelValue) {
         StrokeMath stroke;
         float minAccel = speed / (currentSettings.usableDepth() / float(speed));
         stroke.accel = minAccel + (minAccel * 9) * accelValue;
@@ -85,16 +85,16 @@ namespace advanced_penetration {
         return output;
     }
 
-    void bezCurve(u8_t x0, u8_t x1, u8_t y0, u8_t y1, float r, float t) {
+    void bezCurve(uint8_t x0, uint8_t x1, uint8_t y0, uint8_t y1, float r, float t) {
         float diff = (x1 - x0) * r;
-        u8_t x = floor(bezierMath(x0, x0 + diff, x1 - diff, x1, t));
-        u8_t y = floor(bezierMath(y0, y0, y1, y1, t));
+        uint8_t x = floor(bezierMath(x0, x0 + diff, x1 - diff, x1, t));
+        uint8_t y = floor(bezierMath(y0, y0, y1, y1, t));
         display.drawPixel(x, y);
     }
 
     void drawStroke(bool modified = false) {
         StrokeMath inStroke, outStroke;
-        u8_t x0, x1, x2, y0, y1, w, h, split, spacing;
+        uint8_t x0, x1, x2, y0, y1, w, h, split, spacing;
         float exp = 0.6;
         h = 54;
         if (modified) {
@@ -115,24 +115,24 @@ namespace advanced_penetration {
         x0 = 10;
         x1 = x0 + split;
         x2 = x0 + w;
-        for (u8_t p = 0; p <= split; p += spacing) {
+        for (uint8_t p = 0; p <= split; p += spacing) {
             bezCurve(x0, x1, y0, y1, inStroke.accelTime / inStroke.totalTime, p / float(split));
         }
-        for (u8_t p = 0; p <= (w - split); p += spacing) {
+        for (uint8_t p = 0; p <= (w - split); p += spacing) {
             bezCurve(x1 - 1, x2, y1, y0, outStroke.accelTime / outStroke.totalTime, p / float(w - split));
         }
     }
 
     void drawBars(BaseControl& a){
-        u8_t steps = a.modifier->stepCount();
+        uint8_t steps = a.modifier->stepCount();
         if (steps == 0) {
             return;
         }
-        u8_t barWdith = 101 / steps;
-        u8_t w = barWdith * steps;
-        u8_t x = (101 - w) / 2 + 10;
+        uint8_t barWdith = 101 / steps;
+        uint8_t w = barWdith * steps;
+        uint8_t x = (101 - w) / 2 + 10;
         for (int step = 0; step < steps; step++) {
-            u8_t value = 54 * a.modifier->getModification(step);
+            uint8_t value = 54 * a.modifier->getModification(step);
             if (a.modifier->getControlForStep(step) == currentSettings.modifierControl) {
                 display.drawBox(x, display.getHeight() - value, barWdith + 1, value);
             } else {
@@ -178,7 +178,7 @@ namespace advanced_penetration {
         }
     }
 
-    void updateControl(BaseControl& a, u8_t minVal = 0, u8_t maxVal = 100) {
+    void updateControl(BaseControl& a, uint8_t minVal = 0, uint8_t maxVal = 100) {
         display.setFont(ui::Font::header);
         if (currentSettings.status == ControlStatus::MODIFIER_MENU || currentSettings.status == ControlStatus::MODIFIER_VALUE) {
             if (currentSettings.baseControl == a.id) {
@@ -223,7 +223,7 @@ namespace advanced_penetration {
     }
 
     void handlePreset() {
-        u8_t selectedPreset = encoder.readEncoder() / 3;
+        uint8_t selectedPreset = encoder.readEncoder() / 3;
         if (selectedPreset < presets.size()) {
             currentSettings.processStringCommand(readPresetValueCommand(encoder.readEncoder() / 3));
         } else {
@@ -234,9 +234,9 @@ namespace advanced_penetration {
     }
 
     void advancedClick() {
-        u8_t c = 100;
+        uint8_t c = 100;
         bool loop = true;
-        u8_t value = 0;
+        uint8_t value = 0;
         if (stateMachine->is("advancedPenetration.presets"_s)) {
             handlePreset();
             return;
@@ -277,9 +277,9 @@ namespace advanced_penetration {
         encoder.setEncoderValue(value);
     }
 
-    void drawPresetMenu(u8_t item) {
+    void drawPresetMenu(uint8_t item) {
         const char* convert[presets.size() + 1];
-        for (u8_t i = 0; i < presets.size(); i++) {
+        for (uint8_t i = 0; i < presets.size(); i++) {
             convert[i] = presets[i].c_str();
         }
         convert[presets.size()] = "Save New Preset";
@@ -295,7 +295,7 @@ namespace advanced_penetration {
         currentSettings.lastStatus = currentSettings.status;
     }
 
-    void drawMainUI(u8_t item) {
+    void drawMainUI(uint8_t item) {
         switch (currentSettings.status) {
             case ControlStatus::BASE_MENU:
                 item = item % BaseControls::BASE_COUNT;
@@ -318,7 +318,7 @@ namespace advanced_penetration {
         updateControl(currentSettings.outAcceleration);
     }
 
-    void handleDrawPage(u8_t encoderValue) {
+    void handleDrawPage(uint8_t encoderValue) {
         if (xSemaphoreTake(displayMutex, 100) == pdTRUE) {
             ui::clearPage(display.getU8g2(), true, true);
             ui::setHeader(display.getU8g2(),sp);
@@ -338,8 +338,8 @@ namespace advanced_penetration {
 
     static void startAdvancedPenetrationUITask(void* pvParameters) {
         encoder.setAcceleration(0);
-        u8_t lastEncoder = 0;
-        u8_t lastSpeed = 0;
+        uint8_t lastEncoder = 0;
+        uint8_t lastSpeed = 0;
         showHeaderIcons = false;
 
         while (stateMachine->is("advancedPenetration"_s) || stateMachine->is("advancedPenetration.idle"_s) ||
@@ -347,8 +347,8 @@ namespace advanced_penetration {
             if (stateMachine->is("advancedPenetration.presets"_s) && currentSettings.status != ControlStatus::STATUS_COUNT) {
                 currentSettings.status = ControlStatus::STATUS_COUNT;
             }
-            u8_t speedValue = getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
-            u8_t encoderValue = encoder.readEncoder();
+            uint8_t speedValue = getAnalogAveragePercent(SampleOnPin{Pins::Remote::speedPotPin, 50});
+            uint8_t encoderValue = encoder.readEncoder();
             bool speedChange = abs(speedValue - lastSpeed) > 1 || (speedValue == 0 && lastSpeed != 0);
             if (speedChange) {
                 if (!currentSettings.speed.fromBLE || speedValue <= currentSettings.speed.value || lastSpeed == 0){

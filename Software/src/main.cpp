@@ -59,7 +59,6 @@ void __attribute__((weak)) setup() {
 
     button.attachClick([]() { stateMachine->process_event(ReturnToMenu{}); });
     button.attachDoubleClick([]() { stateMachine->process_event(DoubleBoardPress{}); });
-    button.attachLongPressStart([]() { stateMachine->process_event(TryUpdate{}); });
 
     xTaskCreatePinnedToCore(
         [](void *pvParameters) {

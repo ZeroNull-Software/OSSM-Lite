@@ -90,16 +90,4 @@ inline NimBLECharacteristic* initWiFiConfigCharacteristic(NimBLEService* pServic
     return pChar;
 }
 
-class UpdateCallbacks : public NimBLECharacteristicCallbacks {
-    void onWrite(NimBLECharacteristic* pCharacteristic, NimBLEConnInfo& connInfo) override {
-        stateMachine->process_event(TryUpdate{});
-    }
-} inline updateCallbacks;
-
-inline NimBLECharacteristic* initUpdateCharacteristic(NimBLEService* pService, NimBLEUUID uuid) {
-    NimBLECharacteristic* pChar = pService->createCharacteristic(uuid, NIMBLE_PROPERTY::WRITE | NIMBLE_PROPERTY::WRITE_NR);
-    pChar->setCallbacks(&updateCallbacks);
-    return pChar;
-}
-
 #endif  // OSSM_COMMUNICATION_WIFI_HPP

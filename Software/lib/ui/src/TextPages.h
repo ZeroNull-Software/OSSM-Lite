@@ -9,27 +9,6 @@ namespace ui {
 
         using namespace ui::strings;
 
-        static const TextPage helpPage = {
-            .title = helpTitle,
-            .body = helpBody,
-            .bottomText = helpBottom,
-            .qrUrl = helpQr,
-        };
-
-        static const TextPage updateCheckingPage = {
-            .body = updateChecking,
-        };
-
-        static const TextPage noUpdatePage = {
-            .body = noUpdateBody,
-            .bottomText = noUpdateBottom,
-        };
-
-        static const TextPage updatingPage = {
-            .title = updatingTitle,
-            .body = updatingBody,
-        };
-
         static const TextPage errorPage = {
             .title = error,
         };

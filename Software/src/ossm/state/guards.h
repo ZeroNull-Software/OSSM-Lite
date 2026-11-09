@@ -1,8 +1,6 @@
 #ifndef OSSM_STATE_GUARDS_H
 #define OSSM_STATE_GUARDS_H
 
-#include <WiFi.h>
-
 #include "MenuItems.h"
 #include "ossm/state/calibration.h"
 
@@ -35,11 +33,6 @@ namespace guards {
 
     // Guard for checking if not homed
     constexpr auto isNotHomed = []() { return ossmIsNotHomed(); };
-
-    // Guard for checking if online
-    constexpr auto isOnline = []() {
-        return WiFiClass::status() == WL_CONNECTED;
-    };
 
 }  // namespace guards
 

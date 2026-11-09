@@ -50,11 +50,8 @@ struct OSSMStateMachine {
             "menu.idle"_s + buttonPress[(isOption(Menu::StrokeEngine))] = "strokeEngine"_s,
             "menu.idle"_s + buttonPress[(isOption(Menu::Streaming))] = "streaming"_s,
             "menu.idle"_s + buttonPress[(isOption(Menu::AdvancedPenetration))] = "advancedPenetration"_s,
-            "menu.idle"_s + buttonPress[(isOption(Menu::UpdateOSSM))] = "update"_s,
             "menu.idle"_s + buttonPress[(isOption(Menu::WiFiSetup))] = "wifi"_s,
-            "menu.idle"_s + buttonPress[isOption(Menu::Help)] = "help"_s,
             "menu.idle"_s + buttonPress[(isOption(Menu::Restart))] = "restart"_s,
-            "menu.idle"_s + tryUpdate = "update"_s,
             "menu.idle"_s + doubleBoardPress / reverseRail = "menu.idle"_s,
 
             "advancedPenetration"_s [isNotHomed] = "homing"_s,
@@ -64,20 +61,17 @@ struct OSSMStateMachine {
             "advancedPenetration.preflight"_s + done / (startAdvancedPenetration) = "advancedPenetration.idle"_s,
             "advancedPenetration.preflight"_s + longPress / emergencyStop = "menu"_s,
             "advancedPenetration.preflight"_s + returnToMenu/ emergencyStop = "menu"_s,
-            "advancedPenetration.preflight"_s + tryUpdate / emergencyStop = "update"_s,
 
             "advancedPenetration.idle"_s + longPress / emergencyStop = "menu"_s,
             "advancedPenetration.idle"_s + buttonPress / advancedClick = "advancedPenetration.idle"_s,
             "advancedPenetration.idle"_s + doublePress = "advancedPenetration.presets"_s,
             "advancedPenetration.idle"_s + returnToMenu / emergencyStop = "menu"_s,
-            "advancedPenetration.idle"_s + tryUpdate / emergencyStop = "update"_s,
 
             "advancedPenetration.presets"_s + longPress / emergencyStop = "menu"_s,
             "advancedPenetration.presets"_s + buttonPress / advancedClick = "advancedPenetration.presets"_s,
             "advancedPenetration.presets"_s + doublePress / advancedClick = "advancedPenetration.idle"_s,
             "advancedPenetration.presets"_s + done = "advancedPenetration.idle"_s,
             "advancedPenetration.presets"_s + returnToMenu / emergencyStop = "menu"_s,
-            "advancedPenetration.presets"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine"_s [isNotHomed] = "homing"_s,
             "strokeEngine"_s [isPreflightSafe] / (resetSettingsStrokeEngine, drawPlayControls, startStrokeEngine) = "strokeEngine.idle"_s,
@@ -86,30 +80,25 @@ struct OSSMStateMachine {
             "strokeEngine.preflight"_s + done / (resetSettingsStrokeEngine, drawPlayControls, startStrokeEngine) = "strokeEngine.idle"_s,
             "strokeEngine.preflight"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.preflight"_s + returnToMenu / emergencyStop = "menu"_s,
-            "strokeEngine.preflight"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine.idle"_s + buttonPress / incrementControlStrokeEngine = "strokeEngine.idle"_s,
             "strokeEngine.idle"_s + doublePress / (drawStopping, startHaltAtMin) = "strokeEngine.stopping"_s,
             "strokeEngine.idle"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.idle"_s + returnToMenu / emergencyStop = "menu"_s,
-            "strokeEngine.idle"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine.stopping"_s + done / drawPatternControls = "strokeEngine.pattern"_s,
             "strokeEngine.stopping"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.stopping"_s + returnToMenu / emergencyStop = "menu"_s,
-            "strokeEngine.stopping"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine.pattern"_s + buttonPress[isCalibrationOption] / drawUserCalibration = "usercalibration"_s,
             "strokeEngine.pattern"_s + buttonPress / drawPreflight = "strokeEngine.speedCheck"_s,
             "strokeEngine.pattern"_s + doublePress / drawPreflight = "strokeEngine.speedCheck"_s,
             "strokeEngine.pattern"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.pattern"_s + returnToMenu / emergencyStop = "menu"_s,
-            "strokeEngine.pattern"_s + tryUpdate / emergencyStop = "update"_s,
 
             "strokeEngine.speedCheck"_s + done / (drawPlayControls, startStrokeEngine) = "strokeEngine.idle"_s,
             "strokeEngine.speedCheck"_s + longPress / emergencyStop = "menu"_s,
             "strokeEngine.speedCheck"_s + returnToMenu / emergencyStop = "menu"_s,
-            "strokeEngine.speedCheck"_s + tryUpdate / emergencyStop = "update"_s,
 
             "usercalibration"_s + buttonPress / confirmUserCalibration = "usercalibration"_s,
             "usercalibration"_s + done / (drawPatternControls, startStrokeEngine) = "strokeEngine.pattern"_s,
@@ -127,29 +116,18 @@ struct OSSMStateMachine {
             "streaming.preflight"_s + done / (resetSettingsStreaming, drawPlayControls, startStreaming) = "streaming.idle"_s,
             "streaming.preflight"_s + longPress = "menu"_s,
             "streaming.preflight"_s + returnToMenu / emergencyStop = "menu"_s,
-            "streaming.preflight"_s + tryUpdate / emergencyStop = "update"_s,
 
             "streaming.idle"_s + buttonPress / incrementControlStreaming = "streaming.idle"_s,
             "streaming.idle"_s + longPress / emergencyStop = "menu"_s,
             "streaming.idle"_s + returnToMenu / emergencyStop = "menu"_s,
-            "streaming.idle"_s + tryUpdate / emergencyStop = "update"_s,
-
-            "update"_s [isOnline] / (drawUpdate, startUpdate) = "update.idle"_s,
-            "update"_s = "wifi"_s,
-            "update.idle"_s + updateUnavailable / drawNoUpdate = "update.idle"_s,
-            "update.idle"_s + buttonPress = "menu"_s,
 
             "wifi"_s / drawWiFi = "wifi.idle"_s,
             "wifi.idle"_s + done / stopWifiPortal = "menu"_s,
             "wifi.idle"_s + buttonPress / stopWifiPortal = "menu"_s,
             "wifi.idle"_s + longPress / resetWiFi = "restart"_s,
 
-            "help"_s / drawHelp = "help.idle"_s,
-            "help.idle"_s + buttonPress = "menu"_s,
-
             "error"_s / drawError = "error.idle"_s,
-            "error.idle"_s + buttonPress / drawHelp = "error.help"_s,
-            "error.help"_s + buttonPress / restart = X,
+            "error.idle"_s + buttonPress / restart = X,
 
             "restart"_s / restart = X);
 

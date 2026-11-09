@@ -12,9 +12,9 @@ namespace advanced_penetration {
     enum ModifierControls { AMPLITUDE, IN_STEP, IN_WAIT, OUT_STEP, OUT_WAIT, OFFSET, GO_BACK, MODIFIER_COUNT };
 
     struct Control {
-        u8_t value;
-        u8_t minValue = 0;
-        u8_t maxValue = 100;
+        uint8_t value;
+        uint8_t minValue = 0;
+        uint8_t maxValue = 100;
         String name;
         float getNormalized() { return value / 100.0; }
         float getRampValue(float exp = UserConfig::getSpeedCurve()) { return pow(1 - pow(1 - getNormalized(), exp), 1 / exp); };
@@ -58,7 +58,7 @@ namespace advanced_penetration {
         ModifierControl outStep = {1, 1, 25, m3, ModifierControls::OUT_STEP};
         ModifierControl outWait = {0, 0, 25, m4, ModifierControls::OUT_WAIT};
         ModifierControl offset = {0, 0, 100, mo, ModifierControls::OFFSET};
-        u8_t stepCount() { return inStep.value + inWait.value + outStep.value + outWait.value; }
+        uint8_t stepCount() { return inStep.value + inWait.value + outStep.value + outWait.value; }
         ModifierControls getControlForStep(int cycle) {
             if (stepCount() > 0) {
                 cycle = (cycle + offset.value) % stepCount();
@@ -128,7 +128,7 @@ namespace advanced_penetration {
         BaseControls id;
         Modifier* modifier;
         bool fromBLE;
-        u8_t getModifiedValue(int strokeCount = -1) {
+        uint8_t getModifiedValue(int strokeCount = -1) {
             if (modifier == nullptr || modifier->stepCount() == 0) {
                 return value;
             }
@@ -181,7 +181,7 @@ namespace advanced_penetration {
         bool processStringCommand(BaseControls control, String cmd) {
             if (control == id) {
                 fromBLE = true;
-                u8_t i = cmd.indexOf(":");
+                uint8_t i = cmd.indexOf(":");
                 if (i == 255) {
                     value = constrain(cmd.toInt(), minValue, maxValue);
                     return true;
@@ -216,7 +216,7 @@ namespace advanced_penetration {
         ModifierControls modifierControl = ModifierControls::AMPLITUDE;
         bool changed = false;
         String commandString;
-        u8_t usableDepth() { return maxDepth.value - minDepth.value; };
+        uint8_t usableDepth() { return maxDepth.value - minDepth.value; };
         String getStatus(bool details = false) {
             String output = maxDepth.encodeString(details) + ",";
             output += minDepth.encodeString(details) + ",";

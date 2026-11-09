@@ -23,12 +23,7 @@ void ossmIncrementControlStreaming();
 void ossmStartAdvancedPenetration();
 void ossmStartStrokeEngine();
 void ossmEmergencyStop();
-void ossmDrawHelp();
 void ossmDrawWiFi();
-void ossmDrawUpdate();
-void ossmDrawNoUpdate();
-void ossmDrawUpdating();
-void ossmStartUpdate();
 void ossmDrawError();
 void ossmSetHomed();
 void ossmSetFirstHomed();
@@ -93,19 +88,7 @@ namespace actions {
 
     constexpr auto emergencyStop = []() { ossmEmergencyStop(); };
 
-    constexpr auto drawHelp = []() { ossmDrawHelp(); };
-
     constexpr auto drawWiFi = []() { ossmDrawWiFi(); };
-
-    constexpr auto drawUpdate = []() { ossmDrawUpdate(); };
-
-    constexpr auto drawNoUpdate = []() { ossmDrawNoUpdate(); };
-
-    constexpr auto drawUpdating = []() { ossmDrawUpdating(); };
-
-    // Spawns the OTA update task (TLS check + download run there, not on the
-    // button task, which lacks the stack for a TLS handshake).
-    constexpr auto startUpdate = []() { ossmStartUpdate(); };
 
     constexpr auto stopWifiPortal = []() {};
 

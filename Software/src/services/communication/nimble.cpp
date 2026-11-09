@@ -230,7 +230,6 @@ void initNimble() {
     initCharacteristic(ossmService, NimBLEUUID(INVERT_UUID), &directionConfigCallbacks);
     initCharacteristic(ossmService, NimBLEUUID(RENAME_UUID), &renameConfigCallbacks);
     initCharacteristic(ossmService, NimBLEUUID(GPIO_UUID), &gpioCallbacks);
-    initUpdateCharacteristic(ossmService, NimBLEUUID(UPDATE_UUID));
     initWiFiConfigCharacteristic(ossmService, NimBLEUUID(WIFI_UUID));
     initCharacteristic(ossmService, NimBLEUUID(MACCEL_UUID),&maxAccelerationConfigCallbacks);
     initCharacteristic(ossmService, NimBLEUUID(MAXRPM_UUID),&motorRPMConfigCallbacks);
