@@ -15,16 +15,16 @@ namespace UserConfig {
     namespace defaults {
         constexpr float speedCurve = 0.8;
         constexpr float sensorLimit = 2.5;
-        constexpr const char* deviceName = "OSSM";
+        constexpr const char* deviceName = "CYBORGTOP";
         constexpr bool direction = true;
         constexpr bool reHome = true;
-        constexpr int homingType = Default;
-        constexpr float railLength = 180.0;
-        constexpr float maxAcceleration = 50000.0;
-        constexpr float maxRPM = 1500.0;
+        constexpr int homingType = SingleSided;
+        constexpr float railLength = 400.0;
+        constexpr float maxAcceleration = 10000.0;
+        constexpr float maxRPM = 300.0;
         constexpr float motorSteps = 800.0;
-        constexpr float pulleyTeeth = 20.0;
-        constexpr float beltPitch = 2.0;
+        constexpr float pulleyTeeth = 32.0;
+        constexpr float beltPitch = 5.0;
         constexpr float homingSpeed = 25.0;
     }
 
