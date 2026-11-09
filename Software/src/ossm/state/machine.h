@@ -38,7 +38,12 @@ struct OSSMStateMachine {
 
             "measure.run"_s + error = "error"_s,
             "measure.run"_s + done[(isStrokeTooShort)] = "error"_s,
-            "measure.run"_s + done / setHomed = "menu"_s,
+            // Boot always passes through measure.run (isFirstHomed is true on a
+            // fresh start), so this is the post-boot destination: drop the
+            // user straight into the stroke engine instead of the main menu.
+            // The menu is still reachable with the usual long-press from any
+            // strokeEngine sub-state.
+            "measure.run"_s + done / setHomed = "strokeEngine"_s,
 
             "menu"_s / (drawMenu) = "menu.idle"_s,
 
