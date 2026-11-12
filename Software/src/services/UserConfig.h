@@ -23,7 +23,7 @@ namespace UserConfig {
         constexpr float maxAcceleration = 10000.0;
         constexpr float maxRPM = 300.0;
         constexpr float motorSteps = 800.0;
-        constexpr float pulleyTeeth = 32.0;
+        constexpr float pulleyTeeth = 30.0;
         constexpr float beltPitch = 5.0;
         constexpr float homingSpeed = 25.0;
     }
