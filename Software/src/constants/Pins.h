@@ -52,7 +52,7 @@ namespace Pins {
         constexpr int limitSwitchPin = 33;
 
         // The numebr of times the limit switch must sample as 'closed' before we consider ourselves homed
-        constexpr int limitSwitchActivationThreshold = 10;
+        constexpr int limitSwitchActivationThreshold = 5;
     }
 
     namespace ControlBoard {
