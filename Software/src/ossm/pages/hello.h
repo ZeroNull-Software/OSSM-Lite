@@ -4,12 +4,18 @@
 namespace pages {
 
 /**
- * Draw the hello/splash screen animation
- * Shows OSSM letters bouncing, then R&D logo, then Kinky Makers logo
+ * Draw the boot splash screen: "CYBORGTOP x OSSM" branding with the
+ * "Based on the OSSM Lite Firmware" credit and the firmware version.
+ * The splash is a short procedural animation (growing underline,
+ * subtitle wipes, version typewriter) rendered frame by frame - see
+ * ui::drawSplashFrame and SplashAnimation.h.
  *
  * When the animation completes the remote button is sampled once: if it
  * is held down the device factory-resets (see runFactoryReset),
  * otherwise Done{} is posted so the state machine proceeds to homing.
+ * A long press during the splash is handled by the state machine's
+ * hello + longPress transition; the splash task stops drawing as soon
+ * as the machine leaves the hello state.
  */
 void drawHello();
 

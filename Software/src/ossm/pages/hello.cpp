@@ -1,6 +1,6 @@
 #include "hello.h"
 
-#include "HelloAnimation.h"
+#include "SplashAnimation.h"
 #include "components/HeaderBar.h"
 #include "constants/Pins.h"
 #include "constants/Version.h"
@@ -10,6 +10,9 @@
 #include "services/tasks.h"
 #include "services/UserConfig.h"
 #include "ui.h"
+
+namespace sml = boost::sml;
+using namespace sml;
 
 namespace pages {
 
@@ -61,14 +64,22 @@ namespace pages {
         showHeaderIcons = false;
 
         if (isDisplayAvailable()) {
-            for (int i = 0; i < ui::HELLO_FRAME_COUNT; i++) {
+            for (int frame = 0; frame < ui::Splash::FRAME_COUNT; frame++) {
+                // Stop drawing if the machine left hello mid-splash (e.g. a
+                // factory-reset long press), so this task cannot fight the
+                // next page for the display.
+                if (!stateMachine->is("hello"_s)) break;
                 if (xSemaphoreTake(displayMutex, 100) == pdTRUE) {
-                    ui::drawHelloFrame(display.getU8g2(), ui::HELLO_FRAMES[i], VERSION);
+                    ui::drawSplashFrame(display.getU8g2(), frame, VERSION);
                     refreshPage(true, true);
                     xSemaphoreGive(displayMutex);
                 }
-                vTaskDelay(1);
+                vTaskDelay(pdMS_TO_TICKS(ui::Splash::FRAME_DELAY_MS));
             }
+        }
+
+        if (!stateMachine->is("hello"_s)) {
+            vTaskDelete(nullptr);
         }
 
         // Factory-reset check: if the remote button is held when the
@@ -84,7 +95,7 @@ namespace pages {
     }
 
     void drawHello() {
-        int stackSize = 3 * configMINIMAL_STACK_SIZE;
+        int stackSize = 4 * configMINIMAL_STACK_SIZE;
         xTaskCreate(drawHelloTask, "drawHello", stackSize, nullptr, 1,
                     &Tasks::drawHelloTaskH);
     }

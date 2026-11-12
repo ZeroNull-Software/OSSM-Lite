@@ -48,10 +48,6 @@ struct PreflightData {
     const char* warning;
 };
 
-struct HelloFrame {
-    int heights[4];
-};
-
 struct LogoData {
     const char* title;
     const uint8_t* bitmap;

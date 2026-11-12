@@ -5,6 +5,8 @@
 #include <cstring>
 #include <string>
 
+#include "SplashAnimation.h"
+
 extern "C" {
 #include "qrcode.h"
 }
@@ -201,25 +203,113 @@ namespace ui {
         }
     }
 
-    void drawHelloFrame(u8g2_t* u8g2, const HelloFrame& frame,
-                         const char* version, const char* header) {
+    /**
+     * The stylized 'x' of the splash title: an outlined thick X with a
+     * small filled x floating in its hollow center. Stored as one row
+     * bitmap per scanline (bit X_MARK_SIZE-1-col set per pixel), drawn
+     * with the current draw color.
+     */
+    static void drawCollabMark(u8g2_t* u8g2, int x, int y) {
+        static const uint16_t rows[Splash::X_MARK_SIZE] = {
+            0x707, 0x489, 0x451, 0x222, 0x154, 0x0A8,
+            0x154, 0x222, 0x451, 0x489, 0x707,
+        };
+        for (int row = 0; row < Splash::X_MARK_SIZE; row++) {
+            for (int col = 0; col < Splash::X_MARK_SIZE; col++) {
+                if (rows[row] & (1 << (Splash::X_MARK_SIZE - 1 - col))) {
+                    u8g2_DrawPixel(u8g2, x + col, y + row);
+                }
+            }
+        }
+    }
+
+    /**
+     * Render one frame of the boot splash. Everything is procedural
+     * (clip-window reveals, boxes, lines and a pixel-map mark) so the
+     * splash adds no bitmap assets and no fonts beyond the ones already
+     * linked in.
+     *
+     * Sequence (~30 fps, see SplashAnimation.h):
+     *  - "CYBORGTOP" and "OSSM" sit either side of a static stylized
+     *    collab mark (an outlined 'X' with a small filled x in its
+     *    hollow center) under an underline that grows outward from
+     *    the center
+     *  - the two subtitle lines wipe in left-to-right, staggered
+     *  - the version types itself out at the bottom left, with the
+     *    zeronull.io branding opposite it at the bottom right
+     */
+    void drawSplashFrame(u8g2_t* u8g2, int frame, const char* version) {
+        using namespace Splash;
+
         clearPage(u8g2, true, true);
-        if (header) {
-            setHeader(u8g2, header);
-        }
         u8g2_SetMaxClipWindow(u8g2);
-        u8g2_SetFont(u8g2, Font::title);
-        int startX = 24;
-        int letterSpacing = 20;
-        u8g2_DrawUTF8(u8g2, startX, frame.heights[0], "O");
-        u8g2_DrawUTF8(u8g2, startX + letterSpacing, frame.heights[1], "S");
-        u8g2_DrawUTF8(u8g2, startX + letterSpacing * 2, frame.heights[2], "S");
-        u8g2_DrawUTF8(u8g2, startX + letterSpacing * 3, frame.heights[3], "M");
-        u8g2_SetFont(u8g2, Font::small);
-        u8g2_DrawUTF8(u8g2, 82, 55, "LITE");
-        if (version) {
-            u8g2_DrawUTF8(u8g2, 1, SCREEN_HEIGHT - 1, version);
+
+        // --- title: two words around the stylized collab mark ---
+        u8g2_SetFont(u8g2, Font::bold);
+        int titleAscent = u8g2_GetAscent(u8g2);
+        int leftW = u8g2_GetUTF8Width(u8g2, strings::splashTitleLeft);
+        int rightW = u8g2_GetUTF8Width(u8g2, strings::splashTitleRight);
+        int titleW = leftW + X_GAP + X_MARK_SIZE + X_GAP + rightW;
+        int titleX = (SCREEN_WIDTH - titleW) / 2;
+        if (titleX < 0) titleX = 0;
+        int titleBaseline = TITLE_TOP + titleAscent;
+        int titleBottom = titleBaseline + 2;
+
+        int markX = titleX + leftW + X_GAP;
+        int markY = titleBaseline - X_MARK_TOP;
+
+        u8g2_DrawUTF8(u8g2, titleX, titleBaseline, strings::splashTitleLeft);
+        u8g2_DrawUTF8(u8g2, markX + X_MARK_SIZE + X_GAP, titleBaseline,
+                      strings::splashTitleRight);
+        drawCollabMark(u8g2, markX, markY);
+
+        // --- underline growing outward from the center ---
+        if (frame >= UNDERLINE_START) {
+            int p = frame - UNDERLINE_START;
+            if (p > UNDERLINE_FRAMES) p = UNDERLINE_FRAMES;
+            int half = (titleW / 2) * p / UNDERLINE_FRAMES;
+            int cx = SCREEN_WIDTH / 2;
+            u8g2_DrawHLine(u8g2, cx - half, titleBottom + 2, half * 2 + 1);
         }
+
+        // --- subtitle lines wiping in left-to-right ---
+        u8g2_SetFont(u8g2, Font::small);
+        int subAscent = u8g2_GetAscent(u8g2);
+
+        auto drawSubtitle = [&](const char* text, int top, int start) {
+            if (frame < start) return;
+            int p = frame - start + 1;
+            if (p > SUB_WIPE_FRAMES) p = SUB_WIPE_FRAMES;
+            int w = u8g2_GetUTF8Width(u8g2, text);
+            int x = (SCREEN_WIDTH - w) / 2;
+            if (x < 0) x = 0;
+            u8g2_SetClipWindow(u8g2, 0, top - 1,
+                               (SCREEN_WIDTH * p) / SUB_WIPE_FRAMES,
+                               top + subAscent + 1);
+            u8g2_DrawUTF8(u8g2, x, top + subAscent, text);
+            u8g2_SetMaxClipWindow(u8g2);
+        };
+        drawSubtitle(strings::splashSubtitleTop, SUB1_TOP, SUB1_START);
+        drawSubtitle(strings::splashSubtitleBottom, SUB2_TOP, SUB2_START);
+
+        // --- version typewriter ---
+        if (version && frame >= VERSION_START) {
+            u8g2_SetFont(u8g2, Font::header);
+            int versionLen = strlen(version);
+            int shown = (frame - VERSION_START) / VERSION_FRAMES_PER_CHAR;
+            if (shown > versionLen) shown = versionLen;
+
+            char buf[24];
+            snprintf(buf, sizeof(buf), "v%.*s", shown, version);
+
+            u8g2_DrawUTF8(u8g2, 2, SCREEN_HEIGHT - 2, buf);
+        }
+
+        // --- branding bottom right, opposite the version ---
+        u8g2_SetFont(u8g2, Font::header);
+        int urlW = u8g2_GetUTF8Width(u8g2, strings::splashUrl);
+        u8g2_DrawUTF8(u8g2, SCREEN_WIDTH - 2 - urlW, SCREEN_HEIGHT - 2,
+                      strings::splashUrl);
     }
 
     void drawLogo(u8g2_t* u8g2, const LogoData& data) {

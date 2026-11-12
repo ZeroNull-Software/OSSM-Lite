@@ -13,10 +13,22 @@ namespace ui {
         static const char kinkyMakers[] PROGMEM = "Kinky Makers";
 
         // ============================================================
+        // Boot splash
+        // ============================================================
+        // Drawn as two words with the stylized collab mark between them
+        // (see ui::drawSplashFrame), not as one string.
+        static const char splashTitleLeft[] PROGMEM = "CYBORGTOP";
+        static const char splashTitleRight[] PROGMEM = "OSSM";
+        static const char splashSubtitleTop[] PROGMEM = "Based on the";
+        static const char splashSubtitleBottom[] PROGMEM =
+            "OSSM Lite Firmware";
+        static const char splashUrl[] PROGMEM = "zeronull.io";
+
+        // ============================================================
         // General UI labels
         // ============================================================
         static const char error[] PROGMEM = "Error";
-        static const char homing[] PROGMEM = "Homing";
+        static const char homing[] PROGMEM = "Homing...";
         static const char idle[] PROGMEM = "Initializing";
         static const char restart[] PROGMEM = "Restart";
         static const char settings[] PROGMEM = "Settings";
@@ -67,7 +79,7 @@ namespace ui {
             "State: %u not implemented.";
         static const char youShouldNotBeHere[] PROGMEM =
             "You should not be here.";
-        static const char measuringRail[] PROGMEM = "Measuring Rail";
+        static const char measuringRail[] PROGMEM = "Measuring Rail...";
         static const char noDescription[] PROGMEM =
             "No description available";
 

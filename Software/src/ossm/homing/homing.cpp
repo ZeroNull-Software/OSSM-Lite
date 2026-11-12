@@ -3,8 +3,6 @@
 #include "Strings.h"
 #include "components/HeaderBar.h"
 #include "constants/Pins.h"
-#include "constants/Version.h"
-#include "HelloAnimation.h"
 #include "ossm/Events.h"
 #include "ossm/state/calibration.h"
 #include "ossm/state/error.h"
@@ -65,11 +63,14 @@ namespace homing {
         }
 
         if (xSemaphoreTake(displayMutex, 100) == pdTRUE) {
-            if (stateMachine->is("homing.run"_s)) {
-            ui::drawHelloFrame(display.getU8g2(), ui::HELLO_FRAMES[ui::HELLO_FRAME_COUNT - 1], VERSION, ui::strings::homing);
-            } else {
-            ui::drawHelloFrame(display.getU8g2(), ui::HELLO_FRAMES[ui::HELLO_FRAME_COUNT - 1], VERSION, ui::strings::measuringRail);
-            }
+            // Simple status screen: the current phase centered on an
+            // otherwise blank display.
+            ui::clearPage(display.getU8g2(), true, true);
+            u8g2_SetFont(display.getU8g2(), ui::Font::bold);
+            ui::drawStr::centered(
+                display.getU8g2(), ui::SCREEN_HEIGHT / 2 + 4,
+                stateMachine->is("homing.run"_s) ? ui::strings::homing
+                                                 : ui::strings::measuringRail);
             refreshPage(true, true);
             xSemaphoreGive(displayMutex);
         }
